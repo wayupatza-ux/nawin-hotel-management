@@ -1,0 +1,29 @@
+# ==========================================================
+# ความปลอดภัย: ห้าม commit ไฟล์ที่มี secret/token เด็ดขาด
+# ==========================================================
+.env
+.env.*
+!.env.example
+
+# ข้อมูลส่วนตัว/ธุรกิจ — ห้ามขึ้น repo สาธารณะ/ทีม
+Claude.md
+CLAUDE.md
+.claude/
+agent.md
+agent-directory.md
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# dependencies
+node_modules/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

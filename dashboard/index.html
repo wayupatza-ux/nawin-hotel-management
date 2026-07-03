@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — นาวิน โฮเทล</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="assets/config.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <section id="login-view" class="login-view">
+      <div class="login-panel">
+        <p class="eyebrow">Staff Dashboard</p>
+        <h1>นาวิน โฮเทล</h1>
+        <form id="login-form">
+          <label for="login-email">อีเมล</label>
+          <input id="login-email" type="email" autocomplete="email" required />
+          <label for="login-password">รหัสผ่าน</label>
+          <input id="login-password" type="password" autocomplete="current-password" required />
+          <button class="primary" type="submit">
+            <i data-lucide="log-in"></i>
+            เข้าสู่ระบบ
+          </button>
+          <div id="login-msg" class="message error" hidden></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="app-view" class="app-view" hidden>
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Hotel OS</p>
+          <h1>นาวิน โฮเทล</h1>
+        </div>
+        <nav>
+          <button class="nav-btn active" data-tab="bookings"><i data-lucide="calendar-days"></i>การจอง</button>
+          <button class="nav-btn" data-tab="new-booking"><i data-lucide="plus-circle"></i>เพิ่มการจอง</button>
+          <button class="nav-btn" data-tab="rooms"><i data-lucide="bed-double"></i>ห้องพัก</button>
+          <button class="nav-btn" data-tab="reports"><i data-lucide="bar-chart-3"></i>รายงาน</button>
+        </nav>
+        <div class="profile-box">
+          <div id="profile-name">-</div>
+          <div id="profile-role">-</div>
+          <button id="logout-btn" class="ghost"><i data-lucide="log-out"></i>ออก</button>
+        </div>
+      </aside>
+
+      <section class="content">
+        <header class="topbar">
+          <div>
+            <p id="branch-label" class="eyebrow">กำลังโหลด</p>
+            <h2 id="page-title">การจอง</h2>
+          </div>
+          <button id="refresh-btn" class="icon-btn" title="โหลดข้อมูลใหม่"><i data-lucide="refresh-cw"></i></button>
+        </header>
+
+        <div id="global-msg" class="message" hidden></div>
+
+        <section id="tab-bookings" class="tab-panel">
+          <div class="toolbar">
+            <select id="branch-filter"></select>
+            <input id="date-from" type="date" />
+            <input id="date-to" type="date" />
+            <select id="status-filter">
+              <option value="">ทุกสถานะ</option>
+              <option value="pending">รอยืนยัน</option>
+              <option value="confirmed">ยืนยันแล้ว</option>
+              <option value="checked_in">เช็คอินแล้ว</option>
+              <option value="checked_out">เช็คเอาท์แล้ว</option>
+              <option value="cancelled">ยกเลิกแล้ว</option>
+              <option value="no_show">ไม่มาเข้าพัก</option>
+            </select>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric"><span id="metric-arrivals">0</span><small>เช็คอินวันนี้</small></div>
+            <div class="metric"><span id="metric-active">0</span><small>กำลังพัก/ยืนยัน</small></div>
+            <div class="metric"><span id="metric-revenue">฿0</span><small>ยอดตามรายการ</small></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>รหัส</th>
+                  <th>แขก</th>
+                  <th>วันพัก</th>
+                  <th>ห้อง</th>
+                  <th>สถานะ</th>
+                  <th>ยอด</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="booking-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-new-booking" class="tab-panel" hidden>
+          <form id="new-booking-form" class="form-grid">
+            <div>
+              <label for="new-branch">สาขา</label>
+              <select id="new-branch" required></select>
+            </div>
+            <div>
+              <label for="new-room-type">ประเภทห้อง</label>
+              <select id="new-room-type" required></select>
+            </div>
+            <div>
+              <label for="new-check-in">เช็คอิน</label>
+              <input id="new-check-in" type="date" required />
+            </div>
+            <div>
+              <label for="new-check-out">เช็คเอาท์</label>
+              <input id="new-check-out" type="date" required />
+            </div>
+            <div>
+              <label for="new-num-guests">จำนวนแขก</label>
+              <input id="new-num-guests" type="number" min="1" value="1" required />
+            </div>
+            <div>
+              <label for="new-status">สถานะเริ่มต้น</label>
+              <select id="new-status">
+                <option value="confirmed">ยืนยันแล้ว</option>
+                <option value="pending">รอยืนยัน</option>
+              </select>
+            </div>
+            <div>
+              <label for="new-first-name">ชื่อ</label>
+              <input id="new-first-name" required />
+            </div>
+            <div>
+              <label for="new-last-name">นามสกุล</label>
+              <input id="new-last-name" required />
+            </div>
+            <div>
+              <label for="new-phone">เบอร์โทร</label>
+              <input id="new-phone" type="tel" />
+            </div>
+            <div>
+              <label for="new-email">อีเมล</label>
+              <input id="new-email" type="email" />
+            </div>
+            <div>
+              <label for="new-nationality">สัญชาติ</label>
+              <input id="new-nationality" />
+            </div>
+            <div>
+              <label for="new-notes">หมายเหตุ</label>
+              <input id="new-notes" />
+            </div>
+            <button id="create-booking-btn" class="primary wide" type="submit">
+              <i data-lucide="save"></i>
+              บันทึกการจอง
+            </button>
+          </form>
+        </section>
+
+        <section id="tab-rooms" class="tab-panel" hidden>
+          <div class="toolbar">
+            <select id="room-branch-filter"></select>
+            <select id="room-status-filter">
+              <option value="">ทุกสถานะห้อง</option>
+              <option value="available">พร้อมขาย</option>
+              <option value="maintenance">ซ่อมบำรุง</option>
+              <option value="closed">ปิดใช้งาน</option>
+            </select>
+          </div>
+          <div id="room-grid" class="room-grid"></div>
+        </section>
+
+        <section id="tab-reports" class="tab-panel" hidden>
+          <div class="toolbar report-toolbar">
+            <select id="report-branch-filter"></select>
+            <input id="report-date-from" type="date" />
+            <input id="report-date-to" type="date" />
+            <button id="load-report-btn" class="primary" type="button">
+              <i data-lucide="search"></i>
+              ดูรายงาน
+            </button>
+          </div>
+
+          <div class="metric-row report-metrics">
+            <div class="metric"><span id="report-revenue">฿0</span><small>รายได้ที่ยืนยัน</small></div>
+            <div class="metric"><span id="report-occupancy">0%</span><small>Occupancy</small></div>
+            <div class="metric"><span id="report-adr">฿0</span><small>ADR</small></div>
+            <div class="metric"><span id="report-revpar">฿0</span><small>RevPAR</small></div>
+            <div class="metric"><span id="report-bookings">0</span><small>Bookings</small></div>
+            <div class="metric"><span id="report-repeat">0</span><small>ลูกค้าซ้ำ</small></div>
+          </div>
+
+          <section class="report-section">
+            <div class="section-head">
+              <h3>แนวโน้มรายวัน</h3>
+              <small id="report-scope">-</small>
+            </div>
+            <div id="daily-chart" class="daily-chart"></div>
+          </section>
+
+          <div class="report-grid">
+            <section class="report-section">
+              <h3>ช่องทางการจอง</h3>
+              <div id="source-breakdown" class="breakdown-list"></div>
+            </section>
+            <section class="report-section">
+              <h3>ประเภทห้อง</h3>
+              <div id="room-type-breakdown" class="breakdown-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="booking-dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <div>
+          <p id="detail-ref" class="eyebrow">-</p>
+          <h3 id="detail-guest">รายละเอียดการจอง</h3>
+        </div>
+        <button class="icon-btn" value="close" title="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div id="detail-body" class="detail-grid"></div>
+      <div class="action-grid">
+        <div>
+          <label for="detail-status">สถานะ</label>
+          <select id="detail-status"></select>
+        </div>
+        <div>
+          <label for="detail-room">ห้องจริง</label>
+          <select id="detail-room"></select>
+        </div>
+      </div>
+      <menu>
+        <button id="save-detail-btn" class="primary" value="default" type="button">
+          <i data-lucide="save"></i>
+          บันทึก
+        </button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

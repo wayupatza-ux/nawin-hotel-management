@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>จองห้องพัก — นาวิน โฮเทล ดอนเมือง</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/config.js"></script>
+</head>
+<body>
+  <header class="app-header">จองห้องพัก</header>
+  <main>
+    <div id="loading" class="loading">กำลังโหลดข้อมูล...</div>
+    <form id="booking-form" style="display:none">
+      <div class="card">
+        <label for="branch">สาขา</label>
+        <select id="branch" required></select>
+
+        <label for="check-in">วันเช็คอิน</label>
+        <input type="date" id="check-in" required />
+
+        <label for="check-out">วันเช็คเอาท์</label>
+        <input type="date" id="check-out" required />
+
+        <label for="num-guests">จำนวนแขก</label>
+        <input type="number" id="num-guests" min="1" value="1" required />
+      </div>
+
+      <div class="card">
+        <label>เลือกประเภทห้อง</label>
+        <div id="room-types"></div>
+      </div>
+
+      <div class="card">
+        <label for="first-name">ชื่อ (ตามหนังสือเดินทาง/บัตรประชาชน)</label>
+        <input type="text" id="first-name" required />
+        <label for="last-name">นามสกุล</label>
+        <input type="text" id="last-name" required />
+        <label for="phone">เบอร์โทรศัพท์</label>
+        <input type="tel" id="phone" />
+        <label for="nationality">สัญชาติ</label>
+        <input type="text" id="nationality" />
+
+        <label for="doc-type">ประเภทเอกสาร</label>
+        <select id="doc-type">
+          <option value="passport">พาสปอร์ต</option>
+          <option value="national_id">บัตรประชาชน</option>
+        </select>
+        <label for="doc-number">เลขที่เอกสาร</label>
+        <input type="text" id="doc-number" />
+        <label for="doc-photo">รูปถ่ายเอกสาร (ถ้ามี)</label>
+        <input type="file" id="doc-photo" accept="image/*" />
+      </div>
+
+      <div id="msg-box" class="msg error" style="display:none"></div>
+      <button type="submit" class="primary" id="submit-btn">ยืนยันการจอง</button>
+    </form>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    let idToken = null;
+    let branches = [];
+    let roomTypes = [];
+    let selectedRoomTypeId = null;
+
+    const loading = document.getElementById("loading");
+    const form = document.getElementById("booking-form");
+    const msgBox = document.getElementById("msg-box");
+    const branchSelect = document.getElementById("branch");
+    const checkInInput = document.getElementById("check-in");
+    const checkOutInput = document.getElementById("check-out");
+    const roomTypesEl = document.getElementById("room-types");
+
+    async function loadRoomTypesForBranch() {
+      const branchId = branchSelect.value;
+      roomTypes = await fetchRoomTypes(branchId);
+      selectedRoomTypeId = null;
+      await renderRoomTypes();
+    }
+
+    async function renderRoomTypes() {
+      const checkIn = checkInInput.value;
+      const checkOut = checkOutInput.value;
+      roomTypesEl.innerHTML = "";
+
+      for (const rt of roomTypes) {
+        let availText = "";
+        let availCount = null;
+        if (checkIn && checkOut && checkOut > checkIn) {
+          try {
+            availCount = await checkAvailability(branchSelect.value, rt.id, checkIn, checkOut);
+          } catch (e) {
+            availCount = null;
+          }
+        }
+
+        const div = document.createElement("div");
+        div.className = "room-type-card" + (selectedRoomTypeId === rt.id ? " selected" : "");
+        const availLabel =
+          availCount === null
+            ? "เลือกวันที่เพื่อเช็คห้องว่าง"
+            : availCount > 0
+            ? `ว่าง ${availCount} ห้อง`
+            : "ห้องเต็มในช่วงนี้";
+
+        div.innerHTML = `
+          <div>
+            <div class="name">${rt.name}</div>
+            <div class="avail ${availCount === 0 ? "none" : ""}">${availLabel} · พัก ${rt.capacity} คน</div>
+          </div>
+          <div class="price">฿${rt.base_price}/คืน</div>
+        `;
+
+        if (availCount === null || availCount > 0) {
+          div.addEventListener("click", () => {
+            selectedRoomTypeId = rt.id;
+            renderRoomTypes();
+          });
+        } else {
+          div.style.opacity = "0.5";
+        }
+        roomTypesEl.appendChild(div);
+      }
+    }
+
+    async function init() {
+      try {
+        idToken = await getIdTokenOrRedirect();
+      } catch (err) {
+        if (err.message === "redirecting_to_login") return;
+        loading.textContent = "ไม่สามารถเข้าสู่ระบบผ่าน LINE ได้ กรุณาเปิดผ่านแอป LINE";
+        return;
+      }
+
+      branches = await fetchBranches();
+      branches.forEach((b) => {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.textContent = b.name;
+        branchSelect.appendChild(opt);
+      });
+
+      const today = new Date().toISOString().slice(0, 10);
+      checkInInput.min = today;
+      checkOutInput.min = today;
+
+      await loadRoomTypesForBranch();
+
+      branchSelect.addEventListener("change", loadRoomTypesForBranch);
+      checkInInput.addEventListener("change", renderRoomTypes);
+      checkOutInput.addEventListener("change", renderRoomTypes);
+
+      loading.style.display = "none";
+      form.style.display = "block";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideMessage(msgBox);
+
+      if (!selectedRoomTypeId) {
+        showMessage(msgBox, "กรุณาเลือกประเภทห้องพัก");
+        return;
+      }
+      if (checkOutInput.value <= checkInInput.value) {
+        showMessage(msgBox, "วันเช็คเอาท์ต้องหลังวันเช็คอิน");
+        return;
+      }
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "กำลังจอง...";
+
+      try {
+        const docPhotoFile = document.getElementById("doc-photo").files[0];
+        let idPhotoBase64 = null;
+        let idPhotoMime = null;
+        if (docPhotoFile) {
+          idPhotoBase64 = await fileToBase64(docPhotoFile);
+          idPhotoMime = docPhotoFile.type;
+        }
+
+        const result = await callGuestApi("book", {
+          idToken,
+          branch_id: branchSelect.value,
+          room_type_id: selectedRoomTypeId,
+          check_in: checkInInput.value,
+          check_out: checkOutInput.value,
+          num_guests: Number(document.getElementById("num-guests").value),
+          first_name: document.getElementById("first-name").value,
+          last_name: document.getElementById("last-name").value,
+          phone: document.getElementById("phone").value,
+          nationality: document.getElementById("nationality").value,
+          doc_type: document.getElementById("doc-type").value,
+          doc_number: document.getElementById("doc-number").value,
+          id_photo_base64: idPhotoBase64,
+          id_photo_mime: idPhotoMime,
+        });
+
+        showMessage(
+          msgBox,
+          `จองสำเร็จ! รหัสการจอง ${result.booking_ref} — เราจะติดต่อยืนยันผ่าน LINE เร็วๆ นี้`,
+          "success",
+        );
+        setTimeout(() => (window.location.href = "my-bookings.html"), 1500);
+      } catch (err) {
+        const messages = {
+          no_availability: "ห้องเต็มในช่วงวันที่เลือกแล้ว กรุณาเลือกวันอื่นหรือประเภทห้องอื่น",
+          invalid_dates: "ช่วงวันที่ไม่ถูกต้อง",
+          invalid_id_token: "เซสชัน LINE หมดอายุ กรุณาเปิดหน้านี้ใหม่",
+        };
+        showMessage(msgBox, messages[err.message] || "จองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ยืนยันการจอง";
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

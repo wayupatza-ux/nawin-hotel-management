@@ -1,0 +1,108 @@
+:root {
+  --primary: #06c755; /* LINE green */
+  --dark: #1a1a1a;
+  --gray: #666;
+  --bg: #f5f6f7;
+  --border: #e0e0e0;
+  --danger: #e04b4b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--dark);
+  padding-bottom: 24px;
+}
+
+header.app-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 16px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.room-type-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.room-type-card.selected { border-color: var(--primary); background: #f0fbf4; }
+.room-type-card .name { font-weight: 600; }
+.room-type-card .price { color: var(--primary); font-weight: 700; }
+.room-type-card .avail { font-size: 12px; color: var(--gray); }
+.room-type-card .avail.none { color: var(--danger); }
+
+label { display: block; font-size: 13px; color: var(--gray); margin: 10px 0 4px; }
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+button.primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 16px;
+  cursor: pointer;
+}
+button.primary:disabled { background: #aaa; cursor: not-allowed; }
+
+button.secondary {
+  width: 100%;
+  padding: 10px;
+  background: #fff;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  font-size: 14px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.booking-item { border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 14px; }
+.booking-item .ref { font-weight: 700; }
+.booking-item .status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #eee; display: inline-block; }
+.status.pending { background: #fff3cd; color: #856404; }
+.status.confirmed { background: #d4edda; color: #155724; }
+.status.cancelled { background: #f8d7da; color: #721c24; }
+.status.checked_in, .status.checked_out { background: #d1ecf1; color: #0c5460; }
+
+.msg { padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; }
+.msg.error { background: #f8d7da; color: #721c24; }
+.msg.success { background: #d4edda; color: #155724; }
+
+.loading { text-align: center; color: var(--gray); padding: 24px; }
+nav.bottom-nav { display: flex; gap: 8px; max-width: 480px; margin: 12px auto 0; padding: 0 16px; }
+nav.bottom-nav a { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: #fff; color: var(--dark); text-decoration: none; font-size: 14px; border: 1px solid var(--border); }

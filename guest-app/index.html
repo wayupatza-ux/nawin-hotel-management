@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>นาวิน โฮเทล ดอนเมือง</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/config.js"></script>
+</head>
+<body>
+  <header class="app-header">นาวิน โฮเทล ดอนเมือง</header>
+  <main>
+    <div id="loading" class="loading">กำลังเข้าสู่ระบบผ่าน LINE...</div>
+    <div id="content" style="display:none">
+      <div class="card">
+        <h2 id="welcome-name">ยินดีต้อนรับ</h2>
+        <p>จองห้องพักได้ง่ายๆ ผ่าน LINE รับแจ้งเตือนทันทีเมื่อจองสำเร็จ</p>
+      </div>
+      <a href="booking.html"><button class="primary">จองห้องพัก</button></a>
+      <a href="my-bookings.html"><button class="primary" style="background:#333">การจองของฉัน</button></a>
+    </div>
+    <div id="error-box" class="msg error" style="display:none"></div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (async function () {
+      const loading = document.getElementById("loading");
+      const content = document.getElementById("content");
+      const errorBox = document.getElementById("error-box");
+
+      try {
+        await getIdTokenOrRedirect();
+        const profile = await liff.getProfile().catch(() => null);
+        if (profile?.displayName) {
+          document.getElementById("welcome-name").textContent = `สวัสดีคุณ ${profile.displayName} 👋`;
+        }
+        loading.style.display = "none";
+        content.style.display = "block";
+      } catch (err) {
+        if (err.message === "redirecting_to_login") return; // liff.login() กำลัง redirect อยู่
+        loading.style.display = "none";
+        showMessage(errorBox, "ไม่สามารถเข้าสู่ระบบผ่าน LINE ได้ กรุณาเปิดผ่านแอป LINE อีกครั้ง");
+        console.error(err);
+      }
+    })();
+  </script>
+</body>
+</html>

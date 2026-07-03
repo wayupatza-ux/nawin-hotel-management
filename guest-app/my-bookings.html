@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>การจองของฉัน — นาวิน โฮเทล ดอนเมือง</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/config.js"></script>
+</head>
+<body>
+  <header class="app-header">การจองของฉัน</header>
+  <main>
+    <div id="loading" class="loading">กำลังโหลด...</div>
+    <div id="msg-box" class="msg error" style="display:none"></div>
+    <div id="bookings-list"></div>
+    <nav class="bottom-nav">
+      <a href="index.html">หน้าแรก</a>
+      <a href="booking.html">จองห้องเพิ่ม</a>
+    </nav>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    let idToken = null;
+
+    const statusLabels = {
+      pending: "รอยืนยัน",
+      confirmed: "ยืนยันแล้ว",
+      checked_in: "เช็คอินแล้ว",
+      checked_out: "เช็คเอาท์แล้ว",
+      cancelled: "ยกเลิกแล้ว",
+      no_show: "ไม่มาเข้าพัก",
+    };
+
+    function renderBookings(bookings) {
+      const listEl = document.getElementById("bookings-list");
+      listEl.innerHTML = "";
+
+      if (bookings.length === 0) {
+        listEl.innerHTML = `<div class="card">ยังไม่มีการจอง — <a href="booking.html">จองห้องพักเลย</a></div>`;
+        return;
+      }
+
+      for (const b of bookings) {
+        const div = document.createElement("div");
+        div.className = "card booking-item";
+        const canCancel = ["pending", "confirmed"].includes(b.status);
+        div.innerHTML = `
+          <div class="ref">${b.booking_ref}</div>
+          <div>${b.branches?.name ?? ""} · ${b.room_types?.name ?? ""}</div>
+          <div>${b.check_in} → ${b.check_out} (${b.num_guests} ท่าน)</div>
+          <div>฿${b.total_amount}</div>
+          <span class="status ${b.status}">${statusLabels[b.status] || b.status}</span>
+          ${canCancel ? `<button class="secondary" data-id="${b.id}">ยกเลิกการจอง</button>` : ""}
+        `;
+        listEl.appendChild(div);
+      }
+
+      listEl.querySelectorAll("button.secondary").forEach((btn) => {
+        btn.addEventListener("click", () => cancelBooking(btn.dataset.id));
+      });
+    }
+
+    async function cancelBooking(bookingId) {
+      if (!confirm("ยืนยันยกเลิกการจองนี้?")) return;
+      try {
+        await callGuestApi("cancel", { idToken, booking_id: bookingId });
+        await loadBookings();
+      } catch (err) {
+        showMessage(document.getElementById("msg-box"), "ยกเลิกไม่สำเร็จ กรุณาลองใหม่");
+      }
+    }
+
+    async function loadBookings() {
+      const { bookings } = await callGuestApi("my-bookings", { idToken });
+      renderBookings(bookings);
+    }
+
+    (async function init() {
+      const loading = document.getElementById("loading");
+      const msgBox = document.getElementById("msg-box");
+      try {
+        idToken = await getIdTokenOrRedirect();
+      } catch (err) {
+        if (err.message === "redirecting_to_login") return;
+        loading.textContent = "ไม่สามารถเข้าสู่ระบบผ่าน LINE ได้";
+        return;
+      }
+
+      try {
+        await loadBookings();
+      } catch (err) {
+        showMessage(msgBox, "โหลดข้อมูลการจองไม่สำเร็จ");
+      } finally {
+        loading.style.display = "none";
+      }
+    })();
+  </script>
+</body>
+</html>
