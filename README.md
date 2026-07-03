@@ -38,6 +38,11 @@ dashboard/       Staff dashboard (พนักงาน/manager/CEO)
 - พนักงานเห็นเฉพาะสาขาที่ผูกไว้ตาม RLS; CEO เห็นทุกสาขา
 - เพิ่ม migration `0015_staff_booking_function.sql` สำหรับสร้าง booking แบบ atomic จาก dashboard
 
+## Online URLs (GitHub Pages)
+- Root: `https://wayupatza-ux.github.io/nawin-hotel-management/`
+- Staff/CEO dashboard: `https://wayupatza-ux.github.io/nawin-hotel-management/dashboard/`
+- Guest LIFF app: `https://wayupatza-ux.github.io/nawin-hotel-management/guest-app/`
+
 ## Reports (Phase 5)
 - เพิ่ม migration `0016_hotel_report_function.sql`
 - Dashboard มีแท็บ `รายงาน` สำหรับ KPI โรงแรม: occupancy, revenue, ADR, RevPAR, booking source, room type, daily trend
