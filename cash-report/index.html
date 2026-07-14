@@ -163,7 +163,7 @@
           content.innerHTML = `<div class="error-box">ไม่สามารถโหลดข้อมูลได้: ${data.error || "unknown error"}</div>`;
           return;
         }
-        renderStaff(data.staff, token);
+        renderStaff(data.staff.filter((s) => s.role !== "housekeeping"), token);
         document.getElementById("today-footer").textContent = todayThai();
       } catch (err) {
         content.innerHTML = `<div class="error-box">เกิดข้อผิดพลาด: ${err.message}</div>`;
