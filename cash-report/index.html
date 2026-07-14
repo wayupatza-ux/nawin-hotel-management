@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>ปิดกะ เงินสด — โรงแรมนาวิน ดอนเมือง</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --ink: #17202a;
+      --muted: #687386;
+      --line: #dfe5ec;
+      --brand: #136f63;
+      --brand-dark: #0d5148;
+      --warn: #b45309;
+      --warn-bg: #fef3e2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 12px 0 4px;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .role {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .field { margin-top: 14px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input[type="number"], .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--ink);
+    }
+    .field textarea { resize: vertical; min-height: 44px; }
+    .submit-btn {
+      width: 100%;
+      margin-top: 16px;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:active { opacity: 0.75; }
+    .submit-btn:disabled { opacity: 0.5; cursor: default; }
+    .status-line {
+      margin-top: 10px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+    .status-ok { color: var(--brand-dark); }
+    .status-err { color: #b91c1c; }
+    .error-box {
+      background: #fef2f2;
+      color: #991b1b;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .loading {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 0;
+      font-size: 14px;
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>💰 ปิดกะ เงินสด</h1>
+    <div class="subtitle">โรงแรมนาวิน ดอนเมือง</div>
+    <div id="content" class="loading">กำลังโหลด...</div>
+    <footer id="today-footer"></footer>
+  </div>
+
+  <script>
+    const ROLE_LABEL = {
+      reception_day: "reception กะเช้า",
+      reception_night: "reception กะดึก",
+      housekeeping: "แม่บ้าน",
+    };
+
+    const STAFF_LIST_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-checkin";
+    const CASH_LOG_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-cash-log";
+
+    function getToken() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("k") || "";
+    }
+
+    function todayThai() {
+      const d = new Date();
+      return d.toLocaleDateString("th-TH-u-ca-buddhist", {
+        year: "numeric", month: "long", day: "numeric", weekday: "long",
+      });
+    }
+
+    async function loadStaff() {
+      const token = getToken();
+      const content = document.getElementById("content");
+
+      if (!token) {
+        content.innerHTML = '<div class="error-box">ลิงก์นี้ไม่ถูกต้อง (ไม่มีรหัสเข้าใช้งาน) กรุณาใช้ลิงก์ที่ได้รับมาโดยตรง</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${STAFF_LIST_URL}?action=staff&k=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (!data.success) {
+          content.innerHTML = `<div class="error-box">ไม่สามารถโหลดข้อมูลได้: ${data.error || "unknown error"}</div>`;
+          return;
+        }
+        renderStaff(data.staff, token);
+        document.getElementById("today-footer").textContent = todayThai();
+      } catch (err) {
+        content.innerHTML = `<div class="error-box">เกิดข้อผิดพลาด: ${err.message}</div>`;
+      }
+    }
+
+    function renderStaff(staffList, token) {
+      const content = document.getElementById("content");
+      content.className = "";
+      content.innerHTML = "";
+
+      staffList.forEach((staff) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "name";
+        nameEl.textContent = staff.name;
+        const roleEl = document.createElement("span");
+        roleEl.className = "role";
+        roleEl.textContent = `(${ROLE_LABEL[staff.role] || staff.role})`;
+        nameEl.appendChild(roleEl);
+        card.appendChild(nameEl);
+
+        const roomField = document.createElement("div");
+        roomField.className = "field";
+        roomField.innerHTML = '<label>ยอดเงินสดค่าห้อง (บาท)</label>';
+        const roomInput = document.createElement("input");
+        roomInput.type = "number";
+        roomInput.min = "0";
+        roomInput.step = "1";
+        roomInput.inputMode = "numeric";
+        roomInput.placeholder = "0";
+        roomField.appendChild(roomInput);
+        card.appendChild(roomField);
+
+        const fineField = document.createElement("div");
+        fineField.className = "field";
+        fineField.innerHTML = '<label>ยอดเงินสดค่าปรับ (เช่น กุญแจหาย) (บาท)</label>';
+        const fineInput = document.createElement("input");
+        fineInput.type = "number";
+        fineInput.min = "0";
+        fineInput.step = "1";
+        fineInput.inputMode = "numeric";
+        fineInput.placeholder = "0";
+        fineField.appendChild(fineInput);
+        card.appendChild(fineField);
+
+        const noteField = document.createElement("div");
+        noteField.className = "field";
+        noteField.innerHTML = '<label>หมายเหตุ (ถ้ามี)</label>';
+        const noteInput = document.createElement("textarea");
+        noteInput.placeholder = "เช่น ห้อง 203 กุญแจหาย ปรับ 300";
+        noteField.appendChild(noteInput);
+        card.appendChild(noteField);
+
+        const submitBtn = document.createElement("button");
+        submitBtn.className = "submit-btn";
+        submitBtn.textContent = "✅ บันทึกปิดกะ";
+        card.appendChild(submitBtn);
+
+        const statusLine = document.createElement("div");
+        statusLine.className = "status-line";
+        card.appendChild(statusLine);
+
+        submitBtn.addEventListener("click", async () => {
+          const roomCash = Number(roomInput.value || 0);
+          const fineCash = Number(fineInput.value || 0);
+          const note = noteInput.value.trim();
+
+          submitBtn.disabled = true;
+          statusLine.textContent = "กำลังบันทึก...";
+          statusLine.className = "status-line";
+          try {
+            const res = await fetch(CASH_LOG_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                k: token,
+                staff_id: staff.id,
+                room_cash: roomCash,
+                fine_cash: fineCash,
+                note: note || undefined,
+              }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              statusLine.textContent = `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+              statusLine.className = "status-line status-ok";
+              roomInput.value = "";
+              fineInput.value = "";
+              noteInput.value = "";
+            } else {
+              statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
+              statusLine.className = "status-line status-err";
+            }
+          } catch (err) {
+            statusLine.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+            statusLine.className = "status-line status-err";
+          } finally {
+            submitBtn.disabled = false;
+          }
+        });
+
+        content.appendChild(card);
+      });
+    }
+
+    loadStaff();
+  </script>
+</body>
+</html>
