@@ -71,7 +71,7 @@
     button:active { opacity: 0.75; }
     button:disabled { opacity: 0.5; cursor: default; }
     .btn-present { background: var(--brand); color: #fff; }
-    .btn-leave { background: var(--warn-bg); color: var(--warn); }
+    .btn-checkout { background: var(--warn-bg); color: var(--warn); }
     .status-line {
       margin-top: 10px;
       font-size: 13px;
@@ -178,16 +178,16 @@
         presentBtn.className = "btn-present";
         presentBtn.textContent = "✅ มาทำงานแล้ว";
 
-        const leaveBtn = document.createElement("button");
-        leaveBtn.className = "btn-leave";
-        leaveBtn.textContent = "📋 ขอลา";
+        const checkoutBtn = document.createElement("button");
+        checkoutBtn.className = "btn-checkout";
+        checkoutBtn.textContent = "🚪 เลิกงาน";
 
         const statusLine = document.createElement("div");
         statusLine.className = "status-line";
 
-        async function submit(status, btnClicked) {
+        async function submit(status) {
           presentBtn.disabled = true;
-          leaveBtn.disabled = true;
+          checkoutBtn.disabled = true;
           statusLine.textContent = "กำลังบันทึก...";
           statusLine.className = "status-line";
           try {
@@ -201,7 +201,7 @@
               statusLine.textContent =
                 status === "present"
                   ? `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
-                  : "บันทึกการลาแล้ว ✅";
+                  : `บันทึกเลิกงานแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
               statusLine.className = "status-line status-ok";
             } else {
               statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
@@ -212,15 +212,15 @@
             statusLine.className = "status-line status-err";
           } finally {
             presentBtn.disabled = false;
-            leaveBtn.disabled = false;
+            checkoutBtn.disabled = false;
           }
         }
 
-        presentBtn.addEventListener("click", () => submit("present", presentBtn));
-        leaveBtn.addEventListener("click", () => submit("leave", leaveBtn));
+        presentBtn.addEventListener("click", () => submit("present"));
+        checkoutBtn.addEventListener("click", () => submit("checkout"));
 
         btnRow.appendChild(presentBtn);
-        btnRow.appendChild(leaveBtn);
+        btnRow.appendChild(checkoutBtn);
         card.appendChild(btnRow);
         card.appendChild(statusLine);
         content.appendChild(card);
