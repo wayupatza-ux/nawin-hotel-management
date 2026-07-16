@@ -188,6 +188,20 @@
         nameEl.appendChild(roleEl);
         card.appendChild(nameEl);
 
+        const dateField = document.createElement("div");
+        dateField.className = "field";
+        dateField.innerHTML = '<label>วันที่ (ปกติวันนี้ เลือกย้อนได้ถ้าลืมกรอก)</label>';
+        const dateInput = document.createElement("input");
+        dateInput.type = "date";
+        const now = new Date();
+        const bkkToday = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+        const bkkMonthStart = bkkToday.slice(0, 8) + "01";
+        dateInput.value = bkkToday;
+        dateInput.min = bkkMonthStart;
+        dateInput.max = bkkToday;
+        dateField.appendChild(dateInput);
+        card.appendChild(dateField);
+
         const roomField = document.createElement("div");
         roomField.className = "field";
         roomField.innerHTML = '<label>ยอดเงินสดค่าห้อง (บาท)</label>';
@@ -233,6 +247,8 @@
           const roomCash = Number(roomInput.value || 0);
           const fineCash = Number(fineInput.value || 0);
           const note = noteInput.value.trim();
+          const chosenDate = dateInput.value || bkkToday;
+          const isBackdated = chosenDate !== bkkToday;
 
           submitBtn.disabled = true;
           statusLine.textContent = "กำลังบันทึก...";
@@ -244,6 +260,7 @@
               body: JSON.stringify({
                 k: token,
                 staff_id: staff.id,
+                date: chosenDate,
                 room_cash: roomCash,
                 fine_cash: fineCash,
                 note: note || undefined,
@@ -251,11 +268,14 @@
             });
             const data = await res.json();
             if (data.success) {
-              statusLine.textContent = `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+              statusLine.textContent = isBackdated
+                ? `บันทึกแล้ว ✅ (ย้อนหลังวันที่ ${chosenDate}) เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
+                : `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
               statusLine.className = "status-line status-ok";
               roomInput.value = "";
               fineInput.value = "";
               noteInput.value = "";
+              dateInput.value = bkkToday;
             } else {
               statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
               statusLine.className = "status-line status-err";
