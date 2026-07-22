@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>แจ้งยอดขาย — หมึกย่างบอสตอง</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --ink: #17202a;
+      --muted: #687386;
+      --line: #dfe5ec;
+      --brand: #c2410c;
+      --brand-dark: #9a3412;
+      --warn: #b45309;
+      --warn-bg: #fef3e2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 12px 0 4px;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .field { margin-top: 14px; }
+    .field:first-child { margin-top: 0; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input[type="number"],
+    .field input[type="text"],
+    .field input[type="date"],
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+    .submit-btn {
+      width: 100%;
+      margin-top: 18px;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:active { opacity: 0.75; }
+    .submit-btn:disabled { opacity: 0.5; cursor: default; }
+    .status-line {
+      margin-top: 10px;
+      font-size: 13px;
+      min-height: 18px;
+      text-align: center;
+    }
+    .status-ok { color: var(--brand-dark); }
+    .status-err { color: #b91c1c; }
+    .status-warn { color: var(--warn); }
+    .total-line {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line);
+      font-size: 14px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .total-line b { color: var(--ink); font-size: 16px; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🦑 แจ้งยอดขาย</h1>
+    <div class="subtitle">หมึกย่างบอสตอง</div>
+    <div id="content" class="card">
+      <div class="field">
+        <label>สาขา</label>
+        <select id="branch">
+          <option value="ruamsuk">ซอยร่วมสุข ปทุมธานี</option>
+          <option value="donmueang">หน้าโรงแรม ดอนเมือง</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ชื่อพนักงาน</label>
+        <input id="staffName" type="text" placeholder="ชื่อ-เล่นก็ได้" />
+      </div>
+      <div class="field">
+        <label>วันที่ (ปกติวันนี้ เลือกย้อนได้ถ้าลืมกรอก)</label>
+        <input id="saleDate" type="date" />
+      </div>
+      <div class="field">
+        <label>ยอดเงินสด (บาท)</label>
+        <input id="cash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+      </div>
+      <div class="field">
+        <label>ยอดเงินโอน (บาท)</label>
+        <input id="transfer" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+      </div>
+      <div class="field">
+        <label>ยอดเงินไทยพาณิชย์/QR (บาท)</label>
+        <input id="thaiQr" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+      </div>
+      <div class="total-line">รวม: <b id="totalDisplay">0</b> บาท</div>
+      <button id="submitBtn" class="submit-btn">✅ บันทึกยอดขาย</button>
+      <div id="statusLine" class="status-line"></div>
+    </div>
+    <footer id="today-footer"></footer>
+  </div>
+
+  <script>
+    const REPORT_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-squid-sales-report";
+
+    function getToken() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("k") || "";
+    }
+
+    function todayThai() {
+      const d = new Date();
+      return d.toLocaleDateString("th-TH-u-ca-buddhist", {
+        year: "numeric", month: "long", day: "numeric", weekday: "long",
+      });
+    }
+
+    const token = getToken();
+    const branchEl = document.getElementById("branch");
+    const staffNameEl = document.getElementById("staffName");
+    const dateEl = document.getElementById("saleDate");
+    const cashEl = document.getElementById("cash");
+    const transferEl = document.getElementById("transfer");
+    const thaiQrEl = document.getElementById("thaiQr");
+    const totalDisplay = document.getElementById("totalDisplay");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusLine = document.getElementById("statusLine");
+
+    const now = new Date();
+    const bkkToday = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+    const bkkMonthStart = bkkToday.slice(0, 8) + "01";
+    dateEl.value = bkkToday;
+    dateEl.min = bkkMonthStart;
+    dateEl.max = bkkToday;
+    document.getElementById("today-footer").textContent = todayThai();
+
+    if (!token) {
+      document.getElementById("content").innerHTML =
+        '<div style="color:#991b1b;text-align:center;">ลิงก์นี้ไม่ถูกต้อง (ไม่มีรหัสเข้าใช้งาน) กรุณาใช้ลิงก์ที่ได้รับมาโดยตรง</div>';
+    }
+
+    function updateTotal() {
+      const total = (Number(cashEl.value) || 0) + (Number(transferEl.value) || 0) + (Number(thaiQrEl.value) || 0);
+      totalDisplay.textContent = total.toLocaleString("th-TH");
+    }
+    [cashEl, transferEl, thaiQrEl].forEach((el) => el.addEventListener("input", updateTotal));
+
+    submitBtn.addEventListener("click", async () => {
+      const staffName = staffNameEl.value.trim();
+      if (!staffName) {
+        statusLine.textContent = "กรุณากรอกชื่อพนักงาน";
+        statusLine.className = "status-line status-err";
+        return;
+      }
+      const cash = Number(cashEl.value || 0);
+      const transfer = Number(transferEl.value || 0);
+      const thaiQr = Number(thaiQrEl.value || 0);
+      if (cash === 0 && transfer === 0 && thaiQr === 0) {
+        statusLine.textContent = "กรุณากรอกยอดเงินอย่างน้อย 1 ช่อง";
+        statusLine.className = "status-line status-err";
+        return;
+      }
+      const chosenDate = dateEl.value || bkkToday;
+      const isBackdated = chosenDate !== bkkToday;
+
+      submitBtn.disabled = true;
+      statusLine.textContent = "กำลังบันทึก...";
+      statusLine.className = "status-line";
+      try {
+        const res = await fetch(REPORT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            k: token,
+            branch: branchEl.value,
+            staff_name: staffName,
+            date: chosenDate,
+            cash,
+            transfer,
+            thai_qr: thaiQr,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const timeNow = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+          if (data.was_update) {
+            statusLine.textContent = `แก้ไขยอดเดิมของวันนี้แล้ว ✅ (${chosenDate}) เวลา ${timeNow}`;
+            statusLine.className = "status-line status-warn";
+          } else {
+            statusLine.textContent = isBackdated
+              ? `บันทึกแล้ว ✅ (ย้อนหลังวันที่ ${chosenDate}) เวลา ${timeNow}`
+              : `บันทึกแล้ว ✅ เวลา ${timeNow}`;
+            statusLine.className = "status-line status-ok";
+          }
+          cashEl.value = "";
+          transferEl.value = "";
+          thaiQrEl.value = "";
+          updateTotal();
+          dateEl.value = bkkToday;
+        } else {
+          statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
+          statusLine.className = "status-line status-err";
+        }
+      } catch (err) {
+        statusLine.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+        statusLine.className = "status-line status-err";
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
