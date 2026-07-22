@@ -132,7 +132,7 @@
       housekeeping: "แม่บ้าน",
     };
 
-    const STAFF_LIST_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-checkin";
+    const ME_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-checkin";
     const CASH_LOG_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-cash-log";
 
     function getToken() {
@@ -147,7 +147,7 @@
       });
     }
 
-    async function loadStaff() {
+    async function loadMe() {
       const token = getToken();
       const content = document.getElementById("content");
 
@@ -157,142 +157,139 @@
       }
 
       try {
-        const res = await fetch(`${STAFF_LIST_URL}?action=staff&k=${encodeURIComponent(token)}`);
+        const res = await fetch(`${ME_URL}?action=me&k=${encodeURIComponent(token)}`);
         const data = await res.json();
         if (!data.success) {
-          content.innerHTML = `<div class="error-box">ไม่สามารถโหลดข้อมูลได้: ${data.error || "unknown error"}</div>`;
+          content.innerHTML = `<div class="error-box">ลิงก์นี้ใช้ไม่ได้แล้ว: ${data.error || "unknown error"} — ติดต่อบอสตองเพื่อขอลิงก์ใหม่</div>`;
           return;
         }
-        renderStaff(data.staff.filter((s) => s.role !== "housekeeping"), token);
+        renderForm(data.staff, token);
         document.getElementById("today-footer").textContent = todayThai();
       } catch (err) {
         content.innerHTML = `<div class="error-box">เกิดข้อผิดพลาด: ${err.message}</div>`;
       }
     }
 
-    function renderStaff(staffList, token) {
+    function renderForm(staff, token) {
       const content = document.getElementById("content");
       content.className = "";
       content.innerHTML = "";
 
-      staffList.forEach((staff) => {
-        const card = document.createElement("div");
-        card.className = "card";
+      const card = document.createElement("div");
+      card.className = "card";
 
-        const nameEl = document.createElement("div");
-        nameEl.className = "name";
-        nameEl.textContent = staff.name;
-        const roleEl = document.createElement("span");
-        roleEl.className = "role";
-        roleEl.textContent = `(${ROLE_LABEL[staff.role] || staff.role})`;
-        nameEl.appendChild(roleEl);
-        card.appendChild(nameEl);
+      const nameEl = document.createElement("div");
+      nameEl.className = "name";
+      nameEl.textContent = staff.name;
+      const roleEl = document.createElement("span");
+      roleEl.className = "role";
+      roleEl.textContent = `(${ROLE_LABEL[staff.role] || staff.role})`;
+      nameEl.appendChild(roleEl);
+      card.appendChild(nameEl);
 
-        const dateField = document.createElement("div");
-        dateField.className = "field";
-        dateField.innerHTML = '<label>วันที่ (ปกติวันนี้ เลือกย้อนได้ถ้าลืมกรอก)</label>';
-        const dateInput = document.createElement("input");
-        dateInput.type = "date";
-        const now = new Date();
-        const bkkToday = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
-        const bkkMonthStart = bkkToday.slice(0, 8) + "01";
-        dateInput.value = bkkToday;
-        dateInput.min = bkkMonthStart;
-        dateInput.max = bkkToday;
-        dateField.appendChild(dateInput);
-        card.appendChild(dateField);
+      const dateField = document.createElement("div");
+      dateField.className = "field";
+      dateField.innerHTML = '<label>วันที่ (ปกติวันนี้ เลือกย้อนได้ถ้าลืมกรอก)</label>';
+      const dateInput = document.createElement("input");
+      dateInput.type = "date";
+      const now = new Date();
+      const bkkToday = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+      const bkkMonthStart = bkkToday.slice(0, 8) + "01";
+      dateInput.value = bkkToday;
+      dateInput.min = bkkMonthStart;
+      dateInput.max = bkkToday;
+      dateField.appendChild(dateInput);
+      card.appendChild(dateField);
 
-        const roomField = document.createElement("div");
-        roomField.className = "field";
-        roomField.innerHTML = '<label>ยอดเงินสดค่าห้อง (บาท)</label>';
-        const roomInput = document.createElement("input");
-        roomInput.type = "number";
-        roomInput.min = "0";
-        roomInput.step = "1";
-        roomInput.inputMode = "numeric";
-        roomInput.placeholder = "0";
-        roomField.appendChild(roomInput);
-        card.appendChild(roomField);
+      const roomField = document.createElement("div");
+      roomField.className = "field";
+      roomField.innerHTML = '<label>ยอดเงินสดค่าห้อง (บาท)</label>';
+      const roomInput = document.createElement("input");
+      roomInput.type = "number";
+      roomInput.min = "0";
+      roomInput.step = "1";
+      roomInput.inputMode = "numeric";
+      roomInput.placeholder = "0";
+      roomField.appendChild(roomInput);
+      card.appendChild(roomField);
 
-        const fineField = document.createElement("div");
-        fineField.className = "field";
-        fineField.innerHTML = '<label>ยอดเงินสดค่าปรับ (เช่น กุญแจหาย) (บาท)</label>';
-        const fineInput = document.createElement("input");
-        fineInput.type = "number";
-        fineInput.min = "0";
-        fineInput.step = "1";
-        fineInput.inputMode = "numeric";
-        fineInput.placeholder = "0";
-        fineField.appendChild(fineInput);
-        card.appendChild(fineField);
+      const fineField = document.createElement("div");
+      fineField.className = "field";
+      fineField.innerHTML = '<label>ยอดเงินสดค่าปรับ (เช่น กุญแจหาย) (บาท)</label>';
+      const fineInput = document.createElement("input");
+      fineInput.type = "number";
+      fineInput.min = "0";
+      fineInput.step = "1";
+      fineInput.inputMode = "numeric";
+      fineInput.placeholder = "0";
+      fineField.appendChild(fineInput);
+      card.appendChild(fineField);
 
-        const noteField = document.createElement("div");
-        noteField.className = "field";
-        noteField.innerHTML = '<label>หมายเหตุ (ถ้ามี)</label>';
-        const noteInput = document.createElement("textarea");
-        noteInput.placeholder = "เช่น ห้อง 203 กุญแจหาย ปรับ 300";
-        noteField.appendChild(noteInput);
-        card.appendChild(noteField);
+      const noteField = document.createElement("div");
+      noteField.className = "field";
+      noteField.innerHTML = '<label>หมายเหตุ (ถ้ามี)</label>';
+      const noteInput = document.createElement("textarea");
+      noteInput.placeholder = "เช่น ห้อง 203 กุญแจหาย ปรับ 300";
+      noteField.appendChild(noteInput);
+      card.appendChild(noteField);
 
-        const submitBtn = document.createElement("button");
-        submitBtn.className = "submit-btn";
-        submitBtn.textContent = "✅ บันทึกปิดกะ";
-        card.appendChild(submitBtn);
+      const submitBtn = document.createElement("button");
+      submitBtn.className = "submit-btn";
+      submitBtn.textContent = "✅ บันทึกปิดกะ";
+      card.appendChild(submitBtn);
 
-        const statusLine = document.createElement("div");
+      const statusLine = document.createElement("div");
+      statusLine.className = "status-line";
+      card.appendChild(statusLine);
+
+      submitBtn.addEventListener("click", async () => {
+        const roomCash = Number(roomInput.value || 0);
+        const fineCash = Number(fineInput.value || 0);
+        const note = noteInput.value.trim();
+        const chosenDate = dateInput.value || bkkToday;
+        const isBackdated = chosenDate !== bkkToday;
+
+        submitBtn.disabled = true;
+        statusLine.textContent = "กำลังบันทึก...";
         statusLine.className = "status-line";
-        card.appendChild(statusLine);
-
-        submitBtn.addEventListener("click", async () => {
-          const roomCash = Number(roomInput.value || 0);
-          const fineCash = Number(fineInput.value || 0);
-          const note = noteInput.value.trim();
-          const chosenDate = dateInput.value || bkkToday;
-          const isBackdated = chosenDate !== bkkToday;
-
-          submitBtn.disabled = true;
-          statusLine.textContent = "กำลังบันทึก...";
-          statusLine.className = "status-line";
-          try {
-            const res = await fetch(CASH_LOG_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                k: token,
-                staff_id: staff.id,
-                date: chosenDate,
-                room_cash: roomCash,
-                fine_cash: fineCash,
-                note: note || undefined,
-              }),
-            });
-            const data = await res.json();
-            if (data.success) {
-              statusLine.textContent = isBackdated
-                ? `บันทึกแล้ว ✅ (ย้อนหลังวันที่ ${chosenDate}) เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
-                : `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
-              statusLine.className = "status-line status-ok";
-              roomInput.value = "";
-              fineInput.value = "";
-              noteInput.value = "";
-              dateInput.value = bkkToday;
-            } else {
-              statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
-              statusLine.className = "status-line status-err";
-            }
-          } catch (err) {
-            statusLine.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+        try {
+          const res = await fetch(CASH_LOG_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              k: token,
+              date: chosenDate,
+              room_cash: roomCash,
+              fine_cash: fineCash,
+              note: note || undefined,
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            statusLine.textContent = isBackdated
+              ? `บันทึกแล้ว ✅ (ย้อนหลังวันที่ ${chosenDate}) เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
+              : `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+            statusLine.className = "status-line status-ok";
+            roomInput.value = "";
+            fineInput.value = "";
+            noteInput.value = "";
+            dateInput.value = bkkToday;
+          } else {
+            statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
             statusLine.className = "status-line status-err";
-          } finally {
-            submitBtn.disabled = false;
           }
-        });
-
-        content.appendChild(card);
+        } catch (err) {
+          statusLine.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+          statusLine.className = "status-line status-err";
+        } finally {
+          submitBtn.disabled = false;
+        }
       });
+
+      content.appendChild(card);
     }
 
-    loadStaff();
+    loadMe();
   </script>
 </body>
 </html>
