@@ -146,8 +146,10 @@
     <footer id="today-footer"></footer>
   </div>
 
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const REPORT_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-squid-sales-report";
+    const LIFF_ID = "2010593438-xMcNWEEl";
 
     function getToken() {
       const params = new URLSearchParams(window.location.search);
@@ -184,6 +186,23 @@
       document.getElementById("content").innerHTML =
         '<div style="color:#991b1b;text-align:center;">ลิงก์นี้ไม่ถูกต้อง (ไม่มีรหัสเข้าใช้งาน) กรุณาใช้ลิงก์ที่ได้รับมาโดยตรง</div>';
     }
+
+    // Opens fine as a plain browser page too — LIFF just adds smoother
+    // behavior (prefilled name, auto-close back to the chat) when launched
+    // from inside LINE. Never blocks the form if it fails.
+    let liffReady = false;
+    (async () => {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        liffReady = true;
+        if (liff.isLoggedIn() && !staffNameEl.value) {
+          const profile = await liff.getProfile().catch(() => null);
+          if (profile && profile.displayName) staffNameEl.value = profile.displayName;
+        }
+      } catch (e) {
+        console.warn("LIFF init skipped (opened outside LINE, or LIFF unavailable):", e);
+      }
+    })();
 
     function updateTotal() {
       const total = (Number(cashEl.value) || 0) + (Number(transferEl.value) || 0) + (Number(thaiQrEl.value) || 0);
@@ -243,6 +262,9 @@
           thaiQrEl.value = "";
           updateTotal();
           dateEl.value = bkkToday;
+          if (liffReady && liff.isInClient()) {
+            setTimeout(() => liff.closeWindow(), 1400);
+          }
         } else {
           statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
           statusLine.className = "status-line status-err";
