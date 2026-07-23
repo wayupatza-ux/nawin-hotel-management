@@ -156,6 +156,11 @@
       return params.get("k") || "";
     }
 
+    function getBranchParam() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("branch") || "";
+    }
+
     function todayThai() {
       const d = new Date();
       return d.toLocaleDateString("th-TH-u-ca-buddhist", {
@@ -185,6 +190,15 @@
     if (!token) {
       document.getElementById("content").innerHTML =
         '<div style="color:#991b1b;text-align:center;">ลิงก์นี้ไม่ถูกต้อง (ไม่มีรหัสเข้าใช้งาน) กรุณาใช้ลิงก์ที่ได้รับมาโดยตรง</div>';
+    }
+
+    // If the link specifies a branch (?branch=ruamsuk|donmueang), pre-select
+    // it and lock the dropdown so branch-1 staff never accidentally report
+    // into branch 2's numbers or vice versa.
+    const branchParam = getBranchParam();
+    if (branchParam && [...branchEl.options].some((o) => o.value === branchParam)) {
+      branchEl.value = branchParam;
+      branchEl.disabled = true;
     }
 
     // Opens fine as a plain browser page too — LIFF just adds smoother
