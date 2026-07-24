@@ -173,6 +173,17 @@
       text-align: center;
       padding: 8px 0;
     }
+    .dash-daypicker {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+      margin-bottom: 10px;
+    }
     footer {
       text-align: center;
       color: var(--muted);
@@ -302,6 +313,59 @@
       }
     })();
 
+    const BRANCH_LABEL = { ruamsuk: "ซอยร่วมสุข ปทุมธานี", donmueang: "หน้าโรงแรม ดอนเมือง" };
+    let lastDashboardData = null;
+    let selectedDay = "__month__";
+
+    function thaiDateLabel(dateStr) {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString("th-TH-u-ca-buddhist", { day: "numeric", month: "short" });
+    }
+
+    function renderDashboard(data) {
+      const dashBody = document.getElementById("dashBody");
+      const branchKeys = Object.keys(BRANCH_LABEL);
+
+      let totalLabel, totalValue, branchTotals, todayBlock;
+      if (selectedDay === "__month__") {
+        totalLabel = "เดือนนี้";
+        totalValue = data.month_total;
+        branchTotals = data.by_branch;
+        todayBlock = `<div class="dash-branch" style="grid-column:1/-1;"><div class="bl">วันนี้</div><div class="bv">฿${data.today_total.toLocaleString()}</div></div>`;
+      } else {
+        const day = data.days.find((d) => d.date === selectedDay);
+        const dayTotal = day ? branchKeys.reduce((s, k) => s + (day[k] || 0), 0) : 0;
+        totalLabel = thaiDateLabel(selectedDay);
+        totalValue = dayTotal;
+        branchTotals = branchKeys.map((k) => ({ key: k, label: BRANCH_LABEL[k], total: day ? (day[k] || 0) : 0 }));
+        todayBlock = "";
+      }
+
+      const branchHtml = branchTotals
+        .map((b) => `<div class="dash-branch"><div class="bl">${b.label}</div><div class="bv">฿${b.total.toLocaleString()}</div></div>`)
+        .join("");
+
+      const dayOptions = data.days
+        .slice()
+        .reverse()
+        .map((d) => `<option value="${d.date}" ${selectedDay === d.date ? "selected" : ""}>${thaiDateLabel(d.date)}</option>`)
+        .join("");
+
+      dashBody.innerHTML = `
+        <select id="dayPicker" class="dash-daypicker">
+          <option value="__month__" ${selectedDay === "__month__" ? "selected" : ""}>ทั้งเดือน (รวม)</option>
+          ${dayOptions}
+        </select>
+        <div class="dash-total">฿${totalValue.toLocaleString()}<span>${totalLabel}</span></div>
+        <div class="dash-branches">${branchHtml}</div>
+        ${todayBlock}
+      `;
+      document.getElementById("dayPicker").addEventListener("change", (e) => {
+        selectedDay = e.target.value;
+        renderDashboard(lastDashboardData);
+      });
+    }
+
     async function loadDashboard() {
       const dashBody = document.getElementById("dashBody");
       if (!token) return;
@@ -312,14 +376,8 @@
           dashBody.innerHTML = `<div class="dash-loading">โหลดยอดขายไม่ได้: ${data.error || "unknown error"}</div>`;
           return;
         }
-        const branchHtml = data.by_branch
-          .map((b) => `<div class="dash-branch"><div class="bl">${b.label}</div><div class="bv">฿${b.total.toLocaleString()}</div></div>`)
-          .join("");
-        dashBody.innerHTML = `
-          <div class="dash-total">฿${data.month_total.toLocaleString()}<span>เดือนนี้</span></div>
-          <div class="dash-branches">${branchHtml}</div>
-          <div class="dash-branch" style="grid-column:1/-1;"><div class="bl">วันนี้</div><div class="bv">฿${data.today_total.toLocaleString()}</div></div>
-        `;
+        lastDashboardData = data;
+        renderDashboard(data);
       } catch (err) {
         dashBody.innerHTML = `<div class="dash-loading">เกิดข้อผิดพลาด: ${err.message}</div>`;
       }
