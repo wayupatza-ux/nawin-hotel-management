@@ -326,12 +326,21 @@
       const dashBody = document.getElementById("dashBody");
       const branchKeys = Object.keys(BRANCH_LABEL);
 
+      const priorMonths = data.prior_months || [];
+      const isPriorMonth = priorMonths.some((m) => m.key === selectedDay);
+
       let totalLabel, totalValue, branchTotals, todayBlock;
       if (selectedDay === "__month__") {
         totalLabel = "เดือนนี้";
         totalValue = data.month_total;
         branchTotals = data.by_branch;
         todayBlock = `<div class="dash-branch" style="grid-column:1/-1;"><div class="bl">วันนี้</div><div class="bv">฿${data.today_total.toLocaleString()}</div></div>`;
+      } else if (isPriorMonth) {
+        const m = priorMonths.find((m) => m.key === selectedDay);
+        totalLabel = m.label + " (ยอดรวม)";
+        totalValue = m.total;
+        branchTotals = [];
+        todayBlock = "";
       } else {
         const day = data.days.find((d) => d.date === selectedDay);
         const dayTotal = day ? branchKeys.reduce((s, k) => s + (day[k] || 0), 0) : 0;
@@ -351,10 +360,15 @@
         .map((d) => `<option value="${d.date}" ${selectedDay === d.date ? "selected" : ""}>${thaiDateLabel(d.date)}</option>`)
         .join("");
 
+      const priorMonthOptions = priorMonths
+        .map((m) => `<option value="${m.key}" ${selectedDay === m.key ? "selected" : ""}>${m.label} (ย้อนหลัง)</option>`)
+        .join("");
+
       dashBody.innerHTML = `
         <select id="dayPicker" class="dash-daypicker">
           <option value="__month__" ${selectedDay === "__month__" ? "selected" : ""}>ทั้งเดือน (รวม)</option>
           ${dayOptions}
+          ${priorMonthOptions}
         </select>
         <div class="dash-total">฿${totalValue.toLocaleString()}<span>${totalLabel}</span></div>
         <div class="dash-branches">${branchHtml}</div>
