@@ -99,6 +99,80 @@
       text-align: right;
     }
     .total-line b { color: var(--ink); font-size: 16px; }
+    .dash-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .dash-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .dash-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .dash-live {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--brand-dark);
+    }
+    .dash-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      animation: dash-pulse 2s infinite;
+    }
+    @keyframes dash-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .dash-total {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 12px;
+    }
+    .dash-total span {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+    .dash-branches {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .dash-branch {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .dash-branch .bl {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .dash-branch .bv {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .dash-loading {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      padding: 8px 0;
+    }
     footer {
       text-align: center;
       color: var(--muted);
@@ -111,6 +185,15 @@
   <div class="wrap">
     <h1>🦑 แจ้งยอดขาย</h1>
     <div class="subtitle">หมึกย่างบอสตอง</div>
+
+    <div class="dash-card">
+      <div class="dash-head">
+        <span class="dash-title">ยอดขายเดือนนี้</span>
+        <span class="dash-live"><span class="dash-dot"></span>เรียลไทม์</span>
+      </div>
+      <div id="dashBody"><div class="dash-loading">กำลังโหลด...</div></div>
+    </div>
+
     <div id="content" class="card">
       <div class="field">
         <label>สาขา</label>
@@ -149,6 +232,7 @@
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const REPORT_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-squid-sales-report";
+    const DASHBOARD_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-squid-sales-dashboard";
     const LIFF_ID = "2010593438-xMcNWEEl";
 
     function getToken() {
@@ -218,6 +302,31 @@
       }
     })();
 
+    async function loadDashboard() {
+      const dashBody = document.getElementById("dashBody");
+      if (!token) return;
+      try {
+        const res = await fetch(`${DASHBOARD_URL}?k=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (!data.success) {
+          dashBody.innerHTML = `<div class="dash-loading">โหลดยอดขายไม่ได้: ${data.error || "unknown error"}</div>`;
+          return;
+        }
+        const branchHtml = data.by_branch
+          .map((b) => `<div class="dash-branch"><div class="bl">${b.label}</div><div class="bv">฿${b.total.toLocaleString()}</div></div>`)
+          .join("");
+        dashBody.innerHTML = `
+          <div class="dash-total">฿${data.month_total.toLocaleString()}<span>เดือนนี้</span></div>
+          <div class="dash-branches">${branchHtml}</div>
+          <div class="dash-branch" style="grid-column:1/-1;"><div class="bl">วันนี้</div><div class="bv">฿${data.today_total.toLocaleString()}</div></div>
+        `;
+      } catch (err) {
+        dashBody.innerHTML = `<div class="dash-loading">เกิดข้อผิดพลาด: ${err.message}</div>`;
+      }
+    }
+    loadDashboard();
+    setInterval(loadDashboard, 30000);
+
     function updateTotal() {
       const total = (Number(cashEl.value) || 0) + (Number(transferEl.value) || 0) + (Number(thaiQrEl.value) || 0);
       totalDisplay.textContent = total.toLocaleString("th-TH");
@@ -276,6 +385,7 @@
           thaiQrEl.value = "";
           updateTotal();
           dateEl.value = bkkToday;
+          loadDashboard();
           if (liffReady && liff.isInClient()) {
             setTimeout(() => liff.closeWindow(), 1400);
           }
