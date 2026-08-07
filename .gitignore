@@ -12,9 +12,40 @@ CLAUDE.md
 agent.md
 agent-directory.md
 
+# เอกสารธุรกิจ/การเงิน/ข้อมูลส่วนตัวอื่นๆ ที่อยู่ใน working directory เดียวกัน
+# (คนละโปรเจกต์กับระบบจองโรงแรม แต่แชร์ repo เดียวกันอยู่ตอนนี้ — กัน commit หลุด)
+/invoices/
+/payroll-slips/
+/docs/legal/
+/docs/business-os/
+/docs/ai-image-prompt-generator.md
+/docs/anantra-product-info.md
+/docs/hotel-renovation-costs.md
+/docs/hotel-rent-to-rent-project-memory.md
+/docs/investment-profile-us-stocks.md
+/docs/nabee-bodywash-formulas.md
+/BOSSTONG_BUSINESS_OS_V4.md
+/gpt-context.md
+/real_estate_project_context.md
+/*.jpeg
+/*.jpg
+/*.JPG
+/*.PNG
+/*.png
+/As-Built*
+/Boostong*
+/line secret*
+/รายการรายได้*
+/หนังสือรับรอง*
+/assets/signatures/
+
 # Supabase local
 supabase/.branches/
 supabase/.temp/
+
+# Hermes agent (moved in from ~/.hermes) — has its own git repo, venv,
+# node_modules, credentials (auth.json/.env/config.yaml) and cache. Never track.
+.hermes/
 
 # dependencies
 node_modules/
@@ -27,3 +58,10 @@ npm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+# HyperFrames caption-editing scratch projects (thousands of frame PNGs + large
+# video renders — never commit, they make git status/diff crawl)
+hf-projects/
+*.mp4
+*.MOV
+*.mov
