@@ -1,6 +1,6 @@
 # Staff Tools Architecture
 
-Last updated: 2026-07-23. This is the map for the staff-facing web tools + their
+Last updated: 2026-08-12. This is the map for the staff-facing web tools + their
 backend, so a future session (or future บอสตอง) doesn't have to reverse-engineer
 it from scratch.
 
@@ -12,6 +12,7 @@ All hosted on Netlify at `nawingroup.com`, source in this repo.
 |---|---|---|---|
 | Hotel check-in | `/staff-checkin/` | Reception/housekeeping clock in/out | per-staff token `?k=` |
 | Hotel cash report | `/cash-report/` | Reception logs cash collected at shift close | per-staff token `?k=` |
+| Hotel tax invoice | `/tax-invoice/` | Reception issues a tax invoice/receipt to a hotel guest, with an auto-assigned running document number (server-side, atomic) | per-staff token `?k=` |
 | Squid sales report | `/squid-sales-report/` | Squid-grill staff report daily sales by branch | shared token `?k=` (no per-staff table yet — see Gaps) |
 
 Each page is a static HTML file with inline JS, no build step. They call
@@ -46,11 +47,14 @@ Project: `bosstong-finance` (id `hkglavlxhdtoawjfptah`, region ap-southeast-1).
 - `hotel_attendance` — staff_id, attendance_date, status, checkin_at, checkout_at, ot_flag
 - `hotel_shift_cash_log` — staff_id, shift_date, room_cash, fine_cash, is_backdated
 - `hotel_payroll` — computed payslips, one row per staff per period
+- `hotel_tax_invoices` — invoice_no (unique), business, issue_date, customer_name/address/tax_id/branch, items (jsonb), vat_mode, subtotal, vat_amount, grand_total, issued_by_staff_id/name
+- `tax_invoice_sequences` — (business, year) → last_seq; backs `next_tax_invoice_number()`, generalized via the existing `business_unit` enum so nabee/other companies can get their own numbering series later without a schema change
 - `transactions` — universal ledger across all businesses (hotel/squid/nabee/investment/personal)
 
 **Edge functions (public, token-gated, no IP restriction):**
 - `public-hotel-checkin` — GET `?action=me&k=` returns caller's own info; POST `{k, status}` clocks in/out
 - `public-hotel-cash-log` — POST `{k, date, room_cash, fine_cash}` logs shift cash + creates matching `transactions` rows
+- `public-hotel-tax-invoice` — POST `{k, customer_name, customer_address, customer_tax_id, customer_branch, items: [{desc,qty,rate}], vat_mode: 'none'|'add'|'included'}` — recomputes subtotal/VAT/total server-side (never trusts client-computed money), atomically reserves the next number via `next_tax_invoice_number('hotel', 'NV')` (format `NV-{year}-{seq}`, zero-padded 3 digits, sequence resets each calendar year), inserts the row, returns `{invoice_no, issue_date, subtotal, vat_amount, grand_total}`
 - `public-squid-sales-report` — POST `{k, branch, staff_name, date, cash, transfer, thai_qr}`; resubmitting the same date+branch **replaces** the prior entry rather than stacking a duplicate
 
 **Edge functions (internal, `x-internal-secret` header, called by Hermes scripts only):**
@@ -107,6 +111,13 @@ manually, after they add the OA and send a first message).
 
 ## Known gaps / follow-ups
 
+0. **Tax invoice numbering starts at `NV-2026-002`, not `-001`** — `NV-2026-001`
+   was already hand-typed and printed (Bangchak Solar Energy, 2026-08-11)
+   *before* the automated numbering system existed, so the sequence counter
+   was seeded to skip it and avoid a real duplicate document number. If the
+   sequence ever needs a manual correction again: `update tax_invoice_sequences
+   set last_seq = <n> where business = 'hotel' and year = <year>` — the next
+   call to `next_tax_invoice_number()` returns `<n>+1`.
 1. **No `squid_staff` table** — sales are reported with a free-text name
    field, no per-person token, no way to revoke one squid employee's access
    without rotating the link for everyone. Same fix pattern as hotel is

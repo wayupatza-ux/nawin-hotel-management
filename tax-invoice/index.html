@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ออกใบกำกับภาษี — โรงแรมนาวิน ดอนเมือง</title>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --muted: #6b6b6b;
+    --line: #cfcfcf;
+    --accent: #16302a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: #eee;
+    margin: 0;
+    padding: 24px;
+  }
+  .toolbar {
+    max-width: 800px;
+    margin: 0 auto 16px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .toolbar button {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  .toolbar button.secondary {
+    background: #fff;
+    color: var(--accent);
+  }
+  .toolbar button:disabled { opacity: 0.5; cursor: default; }
+  .toolbar .hint { font-size: 13px; color: #555; }
+  .staff-badge {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-left: auto;
+  }
+
+  .sheet {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 40px 48px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  .loading-box, .error-box {
+    max-width: 800px;
+    margin: 60px auto;
+    text-align: center;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .error-box { color: #b91c1c; }
+
+  .head {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .head h1 { margin: 0 0 4px; font-size: 20px; color: var(--accent); }
+  .head .company-lines { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .head .doc-title { text-align: right; }
+  .doc-title .badge {
+    display: inline-block;
+    font-size: 18px;
+    font-weight: 700;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 6px;
+  }
+  .doc-no {
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .doc-no.pending { color: var(--muted); font-weight: 400; font-style: italic; }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .field input, .field textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 4px;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    outline: none;
+  }
+  .field input:focus, .field textarea:focus { border-bottom-color: var(--accent); }
+  .field.full { grid-column: 1 / -1; }
+  .field input:disabled { color: var(--ink); opacity: 1; }
+
+  table.items { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 14px; }
+  table.items th {
+    background: #f4f2ec;
+    border: 1px solid var(--line);
+    padding: 8px 6px;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  table.items td { border: 1px solid var(--line); padding: 6px; vertical-align: top; }
+  table.items td input {
+    width: 100%;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 3px 2px;
+    outline: none;
+    background: transparent;
+  }
+  table.items input.num { text-align: right; }
+  table.items .col-desc { width: 40%; }
+  table.items .col-nights { width: 12%; }
+  table.items .col-rate { width: 18%; }
+  table.items .col-amount { width: 18%; }
+  table.items .col-del { width: 5%; text-align: center; }
+  .row-del-btn { border: none; background: none; color: #b23a3a; cursor: pointer; font-size: 16px; line-height: 1; }
+  .add-row-btn {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px dashed var(--line);
+    background: #fafafa;
+    color: var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+
+  .totals { display: flex; justify-content: flex-end; margin-bottom: 30px; }
+  .totals table { border-collapse: collapse; font-size: 14px; min-width: 280px; }
+  .totals td { padding: 5px 8px; }
+  .totals td.label { color: var(--muted); text-align: right; }
+  .totals td.val { text-align: right; width: 130px; }
+  .totals td.val input {
+    width: 100%;
+    text-align: right;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    background: transparent;
+  }
+  .totals tr.grand td { border-top: 2px solid var(--accent); font-weight: 700; font-size: 16px; padding-top: 8px; }
+  .vat-toggle { font-size: 12px; color: var(--muted); text-align: right; margin-bottom: 6px; }
+  .vat-toggle label { cursor: pointer; }
+
+  .amount-words { font-size: 13px; color: var(--muted); margin: -18px 0 26px; text-align: right; font-style: italic; }
+
+  .foot { display: flex; justify-content: space-between; gap: 30px; margin-top: 40px; }
+  .sign-block { flex: 1; text-align: center; font-size: 13px; }
+  .sign-line { border-bottom: 1px dotted var(--line); height: 50px; margin-bottom: 6px; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 30px; border-top: 1px solid var(--line); padding-top: 10px; }
+
+  .issue-status { max-width: 800px; margin: 0 auto 12px; font-size: 13px; text-align: center; }
+  .issue-status.ok { color: #146c3f; }
+  .issue-status.err { color: #b91c1c; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar, .issue-status { display: none; }
+    .sheet { box-shadow: none; padding: 20px 36px; max-width: 100%; }
+    .field input, .field textarea, table.items input, .totals td.val input {
+      border-bottom-color: #999;
+    }
+    .row-del-btn, .add-row-btn { display: none; }
+    @page { size: A4; margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="loading" class="loading-box">กำลังตรวจสอบสิทธิ์...</div>
+  <div id="error" class="error-box" hidden></div>
+
+  <div id="app" hidden>
+    <div class="toolbar">
+      <button id="issueBtn" onclick="issueInvoice()">✅ ออกเลขที่ใบกำกับภาษี</button>
+      <button id="printBtn" class="secondary" onclick="window.print()" disabled>🖨️ พิมพ์</button>
+      <button class="secondary" onclick="addRow()">+ เพิ่มรายการ</button>
+      <button id="newBtn" class="secondary" onclick="startNew()">ออกใบใหม่</button>
+      <span class="staff-badge" id="staffBadge"></span>
+    </div>
+    <div id="issueStatus" class="issue-status"></div>
+
+    <div class="sheet">
+      <div class="head">
+        <div>
+          <h1>บริษัท นาวิน กรุ๊ป พร็อพเพอร์ตี้ จำกัด</h1>
+          <div class="company-lines">
+            168/90 หมู่ 1 ต.บ้านใหม่ อ.เมืองปทุมธานี จ.ปทุมธานี 12000<br />
+            โทร 082-137-0782 &nbsp;•&nbsp; เลขประจำตัวผู้เสียภาษี 0135569016880<br />
+            สถานประกอบการ: โรงแรมนาวิน ดอนเมือง (สาขาที่ให้บริการ)
+          </div>
+        </div>
+        <div class="doc-title">
+          <span class="badge">ใบกำกับภาษี / ใบเสร็จรับเงิน</span>
+          <div class="doc-no pending" id="docNoDisplay">ยังไม่ออกเลขที่ — กรอกข้อมูลแล้วกด "ออกเลขที่ใบกำกับภาษี"</div>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="field">
+          <label>วันที่ออกเอกสาร</label>
+          <input type="text" id="docDate" disabled />
+        </div>
+        <div class="field">
+          <label>ออกโดย (พนักงาน)</label>
+          <input type="text" id="issuedBy" disabled />
+        </div>
+
+        <div class="field full">
+          <label>ชื่อลูกค้า / ชื่อนิติบุคคล</label>
+          <input type="text" id="custName" placeholder="ชื่อ-นามสกุล หรือ ชื่อบริษัท" />
+        </div>
+        <div class="field full">
+          <label>ที่อยู่ลูกค้า (สำหรับออกใบกำกับภาษีเต็มรูป)</label>
+          <input type="text" id="custAddress" placeholder="ที่อยู่ตามบัตร/หนังสือรับรองบริษัท" />
+        </div>
+        <div class="field">
+          <label>เลขประจำตัวผู้เสียภาษี (13 หลัก)</label>
+          <input type="text" id="custTaxId" maxlength="13" placeholder="0-0000-00000-00-0" />
+        </div>
+        <div class="field">
+          <label>สาขา (ถ้าเป็นนิติบุคคล)</label>
+          <input type="text" id="custBranch" placeholder="สำนักงานใหญ่ / สาขาที่ 001" />
+        </div>
+      </div>
+
+      <table class="items" id="itemsTable">
+        <thead>
+          <tr>
+            <th class="col-desc">รายการ</th>
+            <th class="col-nights">จำนวน</th>
+            <th class="col-rate">ราคา/หน่วย (บาท)</th>
+            <th class="col-amount">จำนวนเงิน (บาท)</th>
+            <th class="col-del"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+      <button class="add-row-btn" id="addRowBtn" onclick="addRow()">+ เพิ่มรายการ</button>
+
+      <div class="vat-toggle" id="vatToggleBox">
+        <label><input type="radio" name="vatMode" value="none" onchange="recalc()" /> ไม่มี VAT</label>
+        &nbsp;&nbsp;
+        <label><input type="radio" name="vatMode" value="add" onchange="recalc()" /> บวก VAT 7% เพิ่มจากราคา</label>
+        &nbsp;&nbsp;
+        <label><input type="radio" name="vatMode" value="included" checked onchange="recalc()" /> ราคารวม VAT แล้ว</label>
+      </div>
+      <div class="totals">
+        <table>
+          <tr>
+            <td class="label" id="subtotalLabel">รวมเป็นเงิน</td>
+            <td class="val"><input type="text" id="subtotal" readonly /></td>
+          </tr>
+          <tr>
+            <td class="label">ภาษีมูลค่าเพิ่ม 7%</td>
+            <td class="val"><input type="text" id="vatAmount" readonly /></td>
+          </tr>
+          <tr class="grand">
+            <td class="label">จำนวนเงินรวมทั้งสิ้น</td>
+            <td class="val"><input type="text" id="grandTotal" readonly /></td>
+          </tr>
+        </table>
+      </div>
+      <div class="amount-words" id="amountWords"></div>
+
+      <div class="foot">
+        <div class="sign-block">
+          <div class="sign-line"></div>
+          ผู้รับเงิน / ผู้ออกเอกสาร
+        </div>
+        <div class="sign-block">
+          <div class="sign-line"></div>
+          ผู้รับบริการ / ลูกค้า
+        </div>
+      </div>
+
+      <div class="note">
+        เอกสารนี้ใช้เป็นหลักฐานการรับเงินค่าห้องพักและใบกำกับภาษีสำหรับลูกค้าที่เข้าพักที่โรงแรมนาวิน ดอนเมือง
+        เลขที่เอกสารออกโดยระบบอัตโนมัติ เรียงลำดับไม่ซ้ำ และบันทึกไว้ในระบบกลางเมื่อกด "ออกเลขที่ใบกำกับภาษี"
+      </div>
+    </div>
+  </div>
+
+<script>
+  const ME_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-checkin";
+  const ISSUE_URL = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-hotel-tax-invoice";
+
+  const thb = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let issued = false;
+
+  function getToken() {
+    return new URLSearchParams(window.location.search).get("k") || "";
+  }
+
+  function todayThaiLong() {
+    return new Date().toLocaleDateString("th-TH-u-ca-buddhist", {
+      year: "numeric", month: "long", day: "numeric",
+    });
+  }
+
+  function makeRow(desc = "", qty = 1, rate = "") {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="col-desc"><input type="text" class="desc" value="${desc}" placeholder="เช่น ค่าห้องพัก Standard Room" /></td>
+      <td class="col-nights"><input type="number" class="num qty" min="0" step="1" value="${qty}" oninput="recalc()" /></td>
+      <td class="col-rate"><input type="number" class="num rate" min="0" step="0.01" value="${rate}" oninput="recalc()" /></td>
+      <td class="col-amount"><input type="text" class="num amount" readonly /></td>
+      <td class="col-del"><button class="row-del-btn" onclick="this.closest('tr').remove(); recalc();">✕</button></td>
+    `;
+    return tr;
+  }
+
+  function addRow(desc, qty, rate) {
+    document.getElementById("itemsBody").appendChild(makeRow(desc, qty, rate));
+    recalc();
+  }
+
+  function recalc() {
+    let lineTotal = 0;
+    document.querySelectorAll("#itemsBody tr").forEach((tr) => {
+      const qty = parseFloat(tr.querySelector(".qty").value) || 0;
+      const rate = parseFloat(tr.querySelector(".rate").value) || 0;
+      const amount = qty * rate;
+      tr.querySelector(".amount").value = amount ? thb.format(amount) : "";
+      lineTotal += amount;
+    });
+
+    const vatMode = document.querySelector('input[name="vatMode"]:checked').value;
+    let subtotal, vat, grand, subtotalLabel;
+
+    if (vatMode === "add") {
+      subtotal = lineTotal;
+      vat = subtotal * 0.07;
+      grand = subtotal + vat;
+      subtotalLabel = "รวมเป็นเงิน (ก่อน VAT)";
+    } else if (vatMode === "included") {
+      grand = lineTotal;
+      subtotal = grand / 1.07;
+      vat = grand - subtotal;
+      subtotalLabel = "มูลค่าสินค้า/บริการ (แยกจากราคารวม VAT)";
+    } else {
+      subtotal = lineTotal;
+      vat = 0;
+      grand = subtotal;
+      subtotalLabel = "รวมเป็นเงิน";
+    }
+
+    document.getElementById("subtotalLabel").textContent = subtotalLabel;
+    document.getElementById("subtotal").value = thb.format(subtotal);
+    document.getElementById("vatAmount").value = thb.format(vat);
+    document.getElementById("grandTotal").value = thb.format(grand) + " บาท";
+    document.getElementById("amountWords").textContent = grand ? "(" + bahtText(grand) + ")" : "";
+  }
+
+  function setFormLocked(locked) {
+    document.querySelectorAll(
+      "#custName, #custAddress, #custTaxId, #custBranch, table.items input, #vatToggleBox input"
+    ).forEach((el) => (el.disabled = locked));
+    document.querySelectorAll("#itemsBody .row-del-btn").forEach((btn) => (btn.disabled = locked));
+    document.getElementById("addRowBtn").disabled = locked;
+    document.getElementById("issueBtn").disabled = locked;
+    document.getElementById("printBtn").disabled = !locked;
+  }
+
+  async function issueInvoice() {
+    const statusEl = document.getElementById("issueStatus");
+    const custName = document.getElementById("custName").value.trim();
+    if (!custName) {
+      statusEl.textContent = "กรุณากรอกชื่อลูกค้าก่อน";
+      statusEl.className = "issue-status err";
+      return;
+    }
+
+    const items = [];
+    document.querySelectorAll("#itemsBody tr").forEach((tr) => {
+      const desc = tr.querySelector(".desc").value.trim();
+      const qty = parseFloat(tr.querySelector(".qty").value) || 0;
+      const rate = parseFloat(tr.querySelector(".rate").value) || 0;
+      if (desc && qty > 0) items.push({ desc, qty, rate });
+    });
+    if (items.length === 0) {
+      statusEl.textContent = "กรุณาใส่รายการอย่างน้อย 1 รายการ";
+      statusEl.className = "issue-status err";
+      return;
+    }
+
+    const vatMode = document.querySelector('input[name="vatMode"]:checked').value;
+    const issueBtn = document.getElementById("issueBtn");
+    issueBtn.disabled = true;
+    statusEl.textContent = "กำลังออกเลขที่เอกสาร...";
+    statusEl.className = "issue-status";
+
+    try {
+      const res = await fetch(ISSUE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          k: getToken(),
+          customer_name: custName,
+          customer_address: document.getElementById("custAddress").value.trim(),
+          customer_tax_id: document.getElementById("custTaxId").value.trim(),
+          customer_branch: document.getElementById("custBranch").value.trim(),
+          items,
+          vat_mode: vatMode,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        statusEl.textContent = "ออกเลขที่ไม่สำเร็จ: " + (data.error || "unknown error");
+        statusEl.className = "issue-status err";
+        issueBtn.disabled = false;
+        return;
+      }
+
+      issued = true;
+      document.getElementById("docNoDisplay").textContent = "เลขที่เอกสาร: " + data.invoice_no;
+      document.getElementById("docNoDisplay").classList.remove("pending");
+      document.getElementById("subtotal").value = thb.format(Number(data.subtotal));
+      document.getElementById("vatAmount").value = thb.format(Number(data.vat_amount));
+      document.getElementById("grandTotal").value = thb.format(Number(data.grand_total)) + " บาท";
+      document.getElementById("amountWords").textContent = "(" + bahtText(Number(data.grand_total)) + ")";
+      statusEl.textContent = "ออกเลขที่ " + data.invoice_no + " สำเร็จ — พิมพ์ได้เลย";
+      statusEl.className = "issue-status ok";
+      setFormLocked(true);
+    } catch (err) {
+      statusEl.textContent = "เกิดข้อผิดพลาด: " + err.message;
+      statusEl.className = "issue-status err";
+      issueBtn.disabled = false;
+    }
+  }
+
+  function startNew() {
+    if (issued && !confirm("เริ่มใบใหม่? ใบก่อนหน้าถูกบันทึกไว้ในระบบแล้ว")) return;
+    issued = false;
+    document.getElementById("docNoDisplay").textContent = 'ยังไม่ออกเลขที่ — กรอกข้อมูลแล้วกด "ออกเลขที่ใบกำกับภาษี"';
+    document.getElementById("docNoDisplay").classList.add("pending");
+    document.getElementById("issueStatus").textContent = "";
+    document.getElementById("custName").value = "";
+    document.getElementById("custAddress").value = "";
+    document.getElementById("custTaxId").value = "";
+    document.getElementById("custBranch").value = "";
+    document.getElementById("itemsBody").innerHTML = "";
+    document.querySelector('input[name="vatMode"][value="included"]').checked = true;
+    addRow("ค่าห้องพัก", 1, "");
+    setFormLocked(false);
+    document.getElementById("docDate").value = todayThaiLong();
+  }
+
+  // ---- Thai baht text conversion ----
+  function bahtText(num) {
+    const numTxt = ["ศูนย์","หนึ่ง","สอง","สาม","สี่","ห้า","หก","เจ็ด","แปด","เก้า"];
+    const posTxt = ["","สิบ","ร้อย","พัน","หมื่น","แสน","ล้าน"];
+
+    function convert(nStr) {
+      nStr = nStr.replace(/^0+/, "") || "0";
+      if (nStr === "0") return "";
+      let result = "";
+      const len = nStr.length;
+      for (let i = 0; i < len; i++) {
+        const digit = parseInt(nStr[i], 10);
+        const place = len - i - 1;
+        if (digit === 0) continue;
+        if (place === 0 && digit === 1 && len > 1) {
+          result += "เอ็ด";
+        } else if (place === 1 && digit === 2) {
+          result += "ยี่" + posTxt[1];
+        } else if (place === 1 && digit === 1) {
+          result += posTxt[1];
+        } else {
+          result += numTxt[digit] + posTxt[place % 7 === 0 && place > 0 ? 6 : place];
+        }
+      }
+      return result;
+    }
+
+    num = Math.round(num * 100) / 100;
+    const intPart = Math.floor(num);
+    const decPart = Math.round((num - intPart) * 100);
+
+    let millionsChunks = [];
+    let n = intPart;
+    if (n === 0) millionsChunks.push("0");
+    while (n > 0) {
+      millionsChunks.unshift(n % 1000000);
+      n = Math.floor(n / 1000000);
+    }
+    let intText = millionsChunks.map((c) => convert(String(c))).join("ล้าน");
+    if (!intText) intText = "ศูนย์";
+
+    let text = intText + "บาท";
+    if (decPart > 0) {
+      text += convert(String(decPart)) + "สตางค์";
+    } else {
+      text += "ถ้วน";
+    }
+    return text;
+  }
+
+  async function init() {
+    const token = getToken();
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("error");
+
+    if (!token) {
+      loadingEl.hidden = true;
+      errorEl.hidden = false;
+      errorEl.textContent = "ลิงก์นี้ไม่ถูกต้อง (ไม่มีรหัสเข้าใช้งาน) กรุณาใช้ลิงก์ที่ได้รับมาโดยตรง";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${ME_URL}?action=me&k=${encodeURIComponent(token)}`);
+      const data = await res.json();
+      if (!data.success) {
+        loadingEl.hidden = true;
+        errorEl.hidden = false;
+        errorEl.textContent = "ลิงก์นี้ใช้ไม่ได้แล้ว: " + (data.error || "unknown error") + " — ติดต่อบอสตองเพื่อขอลิงก์ใหม่";
+        return;
+      }
+      document.getElementById("staffBadge").textContent = "พนักงาน: " + data.staff.name;
+      document.getElementById("issuedBy").value = data.staff.name;
+      document.getElementById("docDate").value = todayThaiLong();
+      loadingEl.hidden = true;
+      document.getElementById("app").hidden = false;
+      addRow("ค่าห้องพัก", 1, "");
+    } catch (err) {
+      loadingEl.hidden = true;
+      errorEl.hidden = false;
+      errorEl.textContent = "เกิดข้อผิดพลาด: " + err.message;
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
