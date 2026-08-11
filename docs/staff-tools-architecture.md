@@ -99,6 +99,48 @@ Three lightweight watchdogs, all `hermes cron` jobs running `--no-agent
 
 Scripts live in `.hermes/scripts/check_*.py`.
 
+## Delivering a generated file (PDF, image, report) to บอสตอง on LINE
+
+When Claude Code generates a file บอสตองต้องการ (a printed tax invoice,
+payslip, report) and he's away from the machine — e.g. using Claude Code
+remote control from his phone, where the session's own file-delivery UI
+doesn't surface a file he can open/print — **use `send_line_file.py`**:
+
+```bash
+set -a; source .hermes/.env; set +a
+python3 .hermes/scripts/send_line_file.py \
+  --file /path/to/invoice.pdf \
+  --title "ใบกำกับภาษี NV-2026-002" \
+  --subtitle "ชื่อลูกค้า/บริษัท" \
+  --note "รายละเอียดสั้นๆ เช่น ยอดเงินรวม"
+```
+
+It uploads the file to the private `tmp-outbound` Storage bucket via the
+`admin-upload-file` edge function, gets back a **signed URL** (no login
+required to open — this is the important part), and pushes it as a LINE
+flex card with an "เปิด / ดาวน์โหลดไฟล์" button via `LINE_HOME_CHANNEL`.
+
+**Do not use these other paths for this — both were tried and both fail:**
+- `hermes send --to line ...` — broken; Hermes's `get_home_channel()` was
+  never wired up for the `line` platform (confirmed by reading
+  `gateway/config.py` — every other platform has an env-var loader, LINE
+  does not), so it always errors `No home channel set for line` no matter
+  what `LINE_HOME_CHANNEL` is set to.
+- A private `claude.ai` artifact link (e.g. from the `Artifact` tool) — the
+  link requires the viewer to be logged into Claude, which fails inside
+  LINE's in-app browser (and other embedded webviews) with no useful error.
+  A signed Storage URL has no such requirement.
+
+Verified 2026-08-12: uploaded a PDF, confirmed the signed URL serves it with
+`curl` and zero auth headers (`HTTP 200`, correct `content-type`, correct
+byte size), and confirmed the LINE flex card delivers and opens it.
+
+Defaults to a 1-hour signed URL (`--expires`, max 24h/`86400`) — keep it
+short, since anyone who gets the link can open the file with no login until
+it expires. `tmp-outbound` is for this kind of transient delivery only; use
+`payment-slips` (existing bucket) for actual financial-record attachments
+that should persist.
+
 ## Rich Menu / LIFF
 
 `bosstong_hermes` LINE OA has a 6-button main menu (บอสตอง's own quick
