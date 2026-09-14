@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>คลัง Hook — Content OS</title>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --muted: #6b6b6b;
+    --line: #e0e0e0;
+    --accent: #16302a;
+    --bg: #f4f3ee;
+    --card: #ffffff;
+    --chip: #eef0ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    padding: 24px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+  .toolbar input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    outline: none;
+    background: var(--card);
+  }
+  .toolbar select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+  }
+  .toolbar button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  .toolbar button.secondary {
+    background: var(--card);
+    color: var(--accent);
+  }
+
+  .status-line { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .status-line.error { color: #b23a3a; }
+
+  .cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cat-tabs button {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .cat-tabs button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .hook-list { display: flex; flex-direction: column; gap: 10px; }
+  .hook-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .hook-text { font-size: 15px; line-height: 1.5; margin-bottom: 8px; }
+  .hook-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .chip {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .chip.business { background: #e7edf7; color: #2c4a7c; }
+  .chip.source { background: #f7ede7; color: #7c4a2c; }
+  .empty, .loading { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>คลัง Hook</h1>
+    <div class="sub">รวม hook ที่ Hermes คิดได้ทุกวัน (cron "Daily Content Ideas") และที่บอสตองสะสมเอง — ค้นหา/กรองแล้วนำกลับมาใช้ซ้ำได้</div>
+
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="ค้นหาข้อความ hook..." />
+      <select id="businessFilter">
+        <option value="">ทุกธุรกิจ</option>
+        <option value="personal">Personal Brand</option>
+        <option value="squid">หมึกย่าง</option>
+        <option value="nabee">นาบี 789</option>
+        <option value="hotel">โรงแรม</option>
+      </select>
+      <button class="secondary" onclick="load()">รีเฟรช</button>
+    </div>
+
+    <div class="cat-tabs" id="catTabs"></div>
+
+    <div class="status-line" id="statusLine"></div>
+    <div class="hook-list" id="hookList"></div>
+  </div>
+
+<script>
+  const CATEGORIES = [
+    { value: "", label: "ทุกประเภท" },
+    { value: "swap", label: "swap" },
+    { value: "build", label: "build" },
+    { value: "claim", label: "claim" },
+    { value: "list", label: "list" },
+    { value: "contrarian", label: "contrarian" },
+    { value: "other", label: "other" },
+  ];
+  const BUSINESS_LABEL = { personal: "Personal Brand", squid: "หมึกย่าง", nabee: "นาบี 789", hotel: "โรงแรม" };
+
+  const FUNCTION_BASE = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-content-dashboard";
+  const TOKEN_KEY = "content_os_dashboard_token";
+
+  let currentCategory = "";
+  let allHooks = [];
+
+  function getToken() {
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get("k");
+    if (fromUrl) {
+      try { localStorage.setItem(TOKEN_KEY, fromUrl); } catch (e) {}
+      return fromUrl;
+    }
+    try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function renderTabs() {
+    const el = document.getElementById("catTabs");
+    el.innerHTML = "";
+    CATEGORIES.forEach((c) => {
+      const btn = document.createElement("button");
+      btn.textContent = c.label;
+      if (c.value === currentCategory) btn.classList.add("active");
+      btn.onclick = () => { currentCategory = c.value; renderTabs(); load(); };
+      el.appendChild(btn);
+    });
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s ?? "";
+    return div.innerHTML;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function renderHooks(hooks) {
+    const list = document.getElementById("hookList");
+    if (!hooks.length) {
+      list.innerHTML = '<div class="empty">ไม่พบ hook ตามเงื่อนไขนี้</div>';
+      return;
+    }
+    list.innerHTML = hooks.map((h) => `
+      <div class="hook-card">
+        <div class="hook-text">${escapeHtml(h.hook_text)}</div>
+        <div class="hook-meta">
+          <span class="chip">${escapeHtml(h.category)}</span>
+          <span class="chip business">${escapeHtml(BUSINESS_LABEL[h.business] || h.business)}</span>
+          <span class="chip source">${h.source === "self" ? "คิดเอง" : escapeHtml(h.source)}</span>
+          <span>ใช้ไปแล้ว ${h.times_used ?? 0} ครั้ง</span>
+          ${h.last_used_at ? `<span>ใช้ล่าสุด ${formatDate(h.last_used_at)}</span>` : ""}
+          <span>เพิ่มเมื่อ ${formatDate(h.created_at)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function applySearchFilter() {
+    const q = document.getElementById("searchBox").value.trim().toLowerCase();
+    if (!q) { renderHooks(allHooks); return; }
+    renderHooks(allHooks.filter((h) => (h.hook_text || "").toLowerCase().includes(q)));
+  }
+
+  async function load() {
+    const token = getToken();
+    const statusLine = document.getElementById("statusLine");
+    const list = document.getElementById("hookList");
+    if (!token) {
+      statusLine.textContent = "";
+      statusLine.className = "status-line error";
+      statusLine.textContent = "ยังไม่มี token — เปิดลิงก์นี้พร้อม ?k=<token> ต่อท้าย URL ครั้งแรก แล้วระบบจะจำไว้ในเบราว์เซอร์นี้ให้อัตโนมัติ";
+      list.innerHTML = "";
+      return;
+    }
+    list.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+    statusLine.className = "status-line";
+    statusLine.textContent = "";
+
+    const business = document.getElementById("businessFilter").value;
+    const params = new URLSearchParams({ k: token, resource: "hooks", limit: "300" });
+    if (currentCategory) params.set("category", currentCategory);
+    if (business) params.set("business", business);
+
+    try {
+      const res = await fetch(`${FUNCTION_BASE}?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      allHooks = data.hooks || [];
+      statusLine.textContent = `พบ ${allHooks.length} hook`;
+      applySearchFilter();
+    } catch (err) {
+      statusLine.className = "status-line error";
+      statusLine.textContent = "โหลดข้อมูลไม่สำเร็จ: " + err.message;
+      list.innerHTML = "";
+    }
+  }
+
+  document.getElementById("searchBox").addEventListener("input", applySearchFilter);
+  document.getElementById("businessFilter").addEventListener("change", load);
+
+  renderTabs();
+  load();
+</script>
+</body>
+</html>

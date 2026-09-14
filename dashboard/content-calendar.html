@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ปฏิทิน Content — Content OS</title>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --muted: #6b6b6b;
+    --line: #e0e0e0;
+    --accent: #16302a;
+    --bg: #f4f3ee;
+    --card: #ffffff;
+    --today: #fff4d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    padding: 24px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .toolbar button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  .toolbar button.secondary { background: var(--card); color: var(--accent); }
+  .toolbar select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+  }
+  .month-label { font-size: 16px; font-weight: 700; color: var(--accent); min-width: 160px; text-align: center; }
+
+  .status-line { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .status-line.error { color: #b23a3a; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .dow {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding-bottom: 4px;
+  }
+  .cell {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-height: 92px;
+    padding: 6px;
+    font-size: 12px;
+  }
+  .cell.blank { background: transparent; border: none; }
+  .cell.today { background: var(--today); }
+  .cell .daynum { font-weight: 700; margin-bottom: 4px; color: var(--muted); }
+  .entry {
+    display: block;
+    margin-bottom: 3px;
+    padding: 3px 5px;
+    border-radius: 5px;
+    background: #eef0ec;
+    color: var(--accent);
+    font-size: 11px;
+    line-height: 1.3;
+    cursor: default;
+  }
+  .entry.status-posted { background: #e1f0e5; color: #256b3a; }
+  .entry.status-skipped { background: #f0e1e1; color: #8a3a3a; text-decoration: line-through; }
+  .entry .plat { font-weight: 700; }
+
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 14px 0 6px; flex-wrap: wrap; }
+  .legend span.dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .cell { min-height: 70px; padding: 4px; font-size: 10px; }
+    .dow { font-size: 10px; }
+  }
+
+  .empty, .loading { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ปฏิทิน Content</h1>
+    <div class="sub">ภาพรวมโพสต์ที่วางแผนไว้ในเดือนนี้ (ดึงจาก content_calendar)</div>
+
+    <div class="toolbar">
+      <button class="secondary" onclick="shiftMonth(-1)">‹ เดือนก่อน</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="secondary" onclick="shiftMonth(1)">เดือนถัดไป ›</button>
+      <select id="businessFilter">
+        <option value="">ทุกธุรกิจ</option>
+        <option value="personal">Personal Brand</option>
+        <option value="squid">หมึกย่าง</option>
+        <option value="nabee">นาบี 789</option>
+        <option value="hotel">โรงแรม</option>
+      </select>
+      <button onclick="load()">รีเฟรช</button>
+    </div>
+
+    <div class="status-line" id="statusLine"></div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:#eef0ec"></span>วางแผนไว้ (planned)</span>
+      <span><span class="dot" style="background:#e1f0e5"></span>โพสต์แล้ว (posted)</span>
+      <span><span class="dot" style="background:#f0e1e1"></span>ข้าม (skipped)</span>
+    </div>
+
+    <div class="grid" id="calGrid"></div>
+  </div>
+
+<script>
+  const PLATFORM_LABEL = { tiktok: "TikTok", facebook: "FB", instagram: "IG" };
+  const BUSINESS_LABEL = { personal: "Personal Brand", squid: "หมึกย่าง", nabee: "นาบี 789", hotel: "โรงแรม" };
+  const DOW_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  const MONTH_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+  const FUNCTION_BASE = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-content-dashboard";
+  const TOKEN_KEY = "content_os_dashboard_token";
+
+  let viewYear, viewMonth; // viewMonth 0-indexed
+
+  function getToken() {
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get("k");
+    if (fromUrl) {
+      try { localStorage.setItem(TOKEN_KEY, fromUrl); } catch (e) {}
+      return fromUrl;
+    }
+    try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function initMonth() {
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+  }
+
+  function shiftMonth(delta) {
+    viewMonth += delta;
+    if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+    if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+    load();
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s ?? "";
+    return div.innerHTML;
+  }
+
+  function renderGrid(entriesByDay) {
+    const grid = document.getElementById("calGrid");
+    grid.innerHTML = "";
+    DOW_TH.forEach((d) => {
+      const el = document.createElement("div");
+      el.className = "dow";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    const startOffset = firstOfMonth.getDay(); // 0=Sun
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === viewYear && today.getMonth() === viewMonth;
+
+    for (let i = 0; i < startOffset; i++) {
+      const blank = document.createElement("div");
+      blank.className = "cell blank";
+      grid.appendChild(blank);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement("div");
+      cell.className = "cell" + (isCurrentMonth && today.getDate() === day ? " today" : "");
+      const dayNum = document.createElement("div");
+      dayNum.className = "daynum";
+      dayNum.textContent = day;
+      cell.appendChild(dayNum);
+
+      const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const entries = entriesByDay[key] || [];
+      entries.forEach((e) => {
+        const div = document.createElement("div");
+        div.className = "entry status-" + e.status;
+        const hookSnippet = e.content_hooks && e.content_hooks.hook_text
+          ? escapeHtml(e.content_hooks.hook_text).slice(0, 40)
+          : (e.note ? escapeHtml(e.note).slice(0, 40) : "");
+        div.innerHTML = `<span class="plat">${PLATFORM_LABEL[e.platform] || e.platform}</span> ${escapeHtml(BUSINESS_LABEL[e.business] || e.business)}${hookSnippet ? " — " + hookSnippet : ""}`;
+        div.title = `${e.platform} / ${e.format} / ${e.status}\n${e.content_hooks?.hook_text || e.note || ""}`;
+        cell.appendChild(div);
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  async function load() {
+    document.getElementById("monthLabel").textContent = `${MONTH_TH[viewMonth]} ${viewYear + 543}`;
+    const token = getToken();
+    const statusLine = document.getElementById("statusLine");
+    const grid = document.getElementById("calGrid");
+    if (!token) {
+      statusLine.className = "status-line error";
+      statusLine.textContent = "ยังไม่มี token — เปิดลิงก์นี้พร้อม ?k=<token> ต่อท้าย URL ครั้งแรก แล้วระบบจะจำไว้ในเบราว์เซอร์นี้ให้อัตโนมัติ";
+      grid.innerHTML = "";
+      return;
+    }
+    grid.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+    statusLine.className = "status-line";
+    statusLine.textContent = "";
+
+    const from = new Date(viewYear, viewMonth, 1).toISOString();
+    const to = new Date(viewYear, viewMonth + 1, 1).toISOString();
+    const business = document.getElementById("businessFilter").value;
+    const params = new URLSearchParams({ k: token, resource: "calendar", from, to });
+    if (business) params.set("business", business);
+
+    try {
+      const res = await fetch(`${FUNCTION_BASE}?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const entries = data.entries || [];
+      statusLine.textContent = `พบ ${entries.length} รายการที่วางแผนไว้เดือนนี้`;
+
+      const entriesByDay = {};
+      entries.forEach((e) => {
+        const d = new Date(e.scheduled_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        if (!entriesByDay[key]) entriesByDay[key] = [];
+        entriesByDay[key].push(e);
+      });
+      renderGrid(entriesByDay);
+    } catch (err) {
+      statusLine.className = "status-line error";
+      statusLine.textContent = "โหลดข้อมูลไม่สำเร็จ: " + err.message;
+      grid.innerHTML = "";
+    }
+  }
+
+  document.getElementById("businessFilter").addEventListener("change", load);
+
+  initMonth();
+  load();
+</script>
+</body>
+</html>
