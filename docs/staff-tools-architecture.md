@@ -14,6 +14,10 @@ All hosted on Netlify at `nawingroup.com`, source in this repo.
 | Hotel cash report | `/cash-report/` | Reception logs cash collected at shift close | per-staff token `?k=` |
 | Hotel tax invoice | `/tax-invoice/` | Reception issues a tax invoice/receipt to a hotel guest, with an auto-assigned running document number (server-side, atomic) | per-staff token `?k=` |
 | Squid sales report | `/squid-sales-report/` | Squid-grill staff report daily sales by branch | shared token `?k=` (no per-staff table yet — see Gaps) |
+| Nabee sales report | `/nabee-sales-report/` | Nabee 789 staff report daily perfume sales by channel (tiktok/shopee/other) | per-operator token `?k=` (`nabee_stock_operators`) |
+| Nabee production report | `/nabee-production-report/` | Nabee 789 staff open a production batch, issue raw materials, report actual bottle yield | per-operator token `?k=` |
+| Nabee stock confirm | `/nabee-stock-confirm/` | Nabee 789 accounting confirm draft sales/batches (auto-adjusts stock via DB trigger), mark สรรพสามิต filed | per-operator token `?k=`, `role='accounting'` only |
+| Property scout board | `/property-scout/` | บอสตอง's personal Kanban board of hotels/apartments visited for rent-to-rent deal scouting (any region — not just Don Mueang) — CRUD + photo upload/gallery per prospect | single shared token `?k=` (บอสตอง only, not staff-facing) |
 
 Each page is a static HTML file with inline JS, no build step. They call
 Supabase Edge Functions directly via `fetch()`.
@@ -50,12 +54,18 @@ Project: `bosstong-finance` (id `hkglavlxhdtoawjfptah`, region ap-southeast-1).
 - `hotel_tax_invoices` — invoice_no (unique), business, issue_date, customer_name/address/tax_id/branch, items (jsonb), vat_mode, subtotal, vat_amount, grand_total, issued_by_staff_id/name
 - `tax_invoice_sequences` — (business, year) → last_seq; backs `next_tax_invoice_number()`, generalized via the existing `business_unit` enum so nabee/other companies can get their own numbering series later without a schema change
 - `transactions` — universal ledger across all businesses (hotel/squid/nabee/investment/personal)
+- `nabee_products`, `nabee_materials`, `nabee_production_batches`, `nabee_production_batch_outputs`, `nabee_material_stock_moves`, `nabee_product_stock_moves`, `nabee_daily_sales`, `nabee_stock_operators` — perfume stock system, see `docs/nabee-perfume-stock-plan.md` for the full workflow
+- `property_prospects`, `property_prospect_photos` — rent-to-rent deal-scouting board (any region), photos in the private `property-scouting` Storage bucket
 
 **Edge functions (public, token-gated, no IP restriction):**
 - `public-hotel-checkin` — GET `?action=me&k=` returns caller's own info; POST `{k, status}` clocks in/out
 - `public-hotel-cash-log` — POST `{k, date, room_cash, fine_cash}` logs shift cash + creates matching `transactions` rows
 - `public-hotel-tax-invoice` — POST `{k, customer_name, customer_address, customer_tax_id, customer_branch, items: [{desc,qty,rate}], vat_mode: 'none'|'add'|'included'}` — recomputes subtotal/VAT/total server-side (never trusts client-computed money), atomically reserves the next number via `next_tax_invoice_number('hotel', 'NV')` (format `NV-{year}-{seq}`, zero-padded 3 digits, sequence resets each calendar year), inserts the row, returns `{invoice_no, issue_date, subtotal, vat_amount, grand_total}`
 - `public-squid-sales-report` — POST `{k, branch, staff_name, date, cash, transfer, thai_qr}`; resubmitting the same date+branch **replaces** the prior entry rather than stacking a duplicate
+- `public-nabee-sales-report` — GET `?action=products&k=` lists active SKUs; POST `{k, channel, sale_date, entries:[{product_id,quantity}]}` upserts draft daily sales (idempotent replace per date+channel+product, blocks overwriting rows accounting already confirmed)
+- `public-nabee-production-report` — GET `?action=init&k=` returns products/materials/recent batches; POST `{k, action:'create_batch'|'issue_materials'|'report_output', ...}` drives one production batch through planned → materials_issued → reported
+- `public-nabee-stock-confirm` — accounting-only (`role='accounting'`); GET `?action=init&k=` returns pending drafts/batches + stock balances; POST `{k, action:'confirm_sales'|'confirm_batch'|'mark_excise_filed', ...}` — confirming fires a DB trigger that writes the stock move automatically
+- `public-property-scout` — GET `?resource=list|detail&k=` (detail also takes `id=`, returns photos with 1hr signed URLs); POST `{k, resource:'save'|'delete'|'upload_photo'|'delete_photo', ...}` — `upload_photo` takes `{prospect_id, filename, content_base64, caption?}` (base64-encoded image, no separate storage-upload step needed from the client). Token checked via `check_property_scout_token(text)`, a `security definer` SQL function reading the Vault secret `property_scout_token` server-side (PostgREST cannot query the `vault` schema directly, so token checks against Vault must go through an RPC like this rather than `.schema("vault").from(...)`)
 
 **Edge functions (internal, `x-internal-secret` header, called by Hermes scripts only):**
 - `get-hotel-staff`, `get-hotel-attendance`, `save-hotel-payroll`, `save-transaction`, `get-transactions`, etc.

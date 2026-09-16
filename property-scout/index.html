@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>บอร์ดสำรวจทำเล — Property Scout</title>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --muted: #6b6b6b;
+    --line: #e0e0e0;
+    --accent: #16302a;
+    --accent-soft: #eef0ec;
+    --bg: #f4f3ee;
+    --card: #ffffff;
+    --danger: #b23a3a;
+    --good: #256b3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    padding: 20px;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  button {
+    font-family: inherit; font-size: 13px; padding: 9px 16px; border-radius: 8px;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.secondary { background: var(--card); color: var(--accent); }
+  button.danger { background: #fff; color: var(--danger); border-color: var(--danger); }
+  button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  input, select, textarea {
+    font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--card); color: var(--ink); width: 100%;
+  }
+  textarea { resize: vertical; min-height: 56px; }
+
+  .status-line { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .status-line.error { color: var(--danger); }
+
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+  .col { background: rgba(255,255,255,.5); border-radius: 12px; padding: 10px; min-height: 120px; }
+  .col-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px 10px; }
+  .col-head h2 { font-size: 14px; margin: 0; color: var(--accent); }
+  .col-head .count { font-size: 12px; color: var(--muted); background: var(--accent-soft); border-radius: 20px; padding: 2px 9px; }
+
+  .pcard {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; margin-bottom: 10px; cursor: pointer; transition: box-shadow .15s;
+  }
+  .pcard:hover { box-shadow: 0 3px 10px rgba(0,0,0,.08); }
+  .pcard .pname { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .pcard .ploc { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .pcard .prow { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink); margin-bottom: 3px; }
+  .pcard .prow .lbl { color: var(--muted); }
+  .pcard .pmeta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+  .score-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--accent-soft); color: var(--accent); }
+  .photo-badge { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+  .type-tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 20px; background: #e7e2d8; color: #6b5a2f; margin-bottom: 6px; }
+
+  .empty { text-align: center; color: var(--muted); font-size: 12px; padding: 20px 6px; }
+  .loading { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
+
+  /* Modal */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,20,20,.45); display: flex;
+    align-items: flex-start; justify-content: center; padding: 30px 16px; overflow-y: auto; z-index: 50;
+  }
+  .overlay[hidden] { display: none; }
+  .modal {
+    background: var(--card); border-radius: 14px; width: 100%; max-width: 920px;
+    padding: 22px 26px 26px; box-shadow: 0 10px 40px rgba(0,0,0,.2);
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .modal-head h2 { margin: 0; font-size: 18px; color: var(--accent); }
+  .close-x { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 4px; }
+
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 760px) { .modal-grid, .board { grid-template-columns: 1fr; } }
+
+  fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 14px; margin: 0 0 14px; }
+  legend { font-size: 12px; color: var(--accent); font-weight: 700; padding: 0 6px; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .checks { display: flex; gap: 16px; align-items: center; font-size: 13px; }
+  .checks label { display: flex; gap: 6px; align-items: center; color: var(--ink); }
+  .checks input { width: auto; }
+
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .gallery .thumb { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: var(--accent-soft); }
+  .gallery .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery .thumb .rm {
+    position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,.55); color: #fff; border: none;
+    border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  .dropzone {
+    border: 2px dashed var(--line); border-radius: 10px; padding: 16px; text-align: center;
+    color: var(--muted); font-size: 12px; cursor: pointer; margin-bottom: 14px;
+  }
+  .dropzone.drag { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 10px; flex-wrap: wrap; }
+  .modal-msg { font-size: 12px; color: var(--muted); }
+  .modal-msg.error { color: var(--danger); }
+  .modal-msg.ok { color: var(--good); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>บอร์ดสำรวจทำเล — Property Scout</h1>
+  <div class="sub">เก็บข้อมูลโรงแรม/อพาร์ตเมนต์ที่ไปดูมาเพื่อพิจารณาเช่าแบบ Rent to Rent พร้อมรูปถ่ายหน้างาน</div>
+
+  <div class="toolbar">
+    <button onclick="openNew()">+ เพิ่มที่ใหม่</button>
+    <button class="secondary" onclick="load()">รีเฟรช</button>
+    <input id="searchBox" placeholder="ค้นหาชื่อ/ทำเล..." style="max-width:220px" oninput="renderBoard()" />
+    <select id="provinceFilter" style="max-width:180px" onchange="renderBoard()">
+      <option value="">ทุกจังหวัด</option>
+    </select>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+  <div id="boardWrap"><div class="loading">กำลังโหลด...</div></div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">เพิ่มที่ใหม่</h2>
+      <button class="close-x" onclick="closeModal()">&times;</button>
+    </div>
+
+    <div class="modal-grid">
+      <div>
+        <fieldset>
+          <legend>ข้อมูลทั่วไป</legend>
+          <div class="field"><label>ชื่อสถานที่ *</label><input id="f_name" placeholder="เช่น โรงแรม ABC พัทยา" /></div>
+          <div class="field-row">
+            <div class="field"><label>ประเภท</label>
+              <select id="f_property_type"><option value="hotel">โรงแรม</option><option value="apartment">อพาร์ตเมนต์</option><option value="other">อื่นๆ</option></select>
+            </div>
+            <div class="field"><label>สถานะดีล</label>
+              <select id="f_status">
+                <option value="scouting">กำลังสำรวจ</option>
+                <option value="negotiating">กำลังเจรจา</option>
+                <option value="signed">เซ็นสัญญาแล้ว</option>
+                <option value="rejected">ตัด/ไม่เอา</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>จังหวัด</label><input id="f_province" placeholder="เช่น ชลบุรี" /></div>
+            <div class="field"><label>อำเภอ/เขต</label><input id="f_district" placeholder="เช่น บางละมุง" /></div>
+          </div>
+          <div class="field"><label>ที่อยู่</label><textarea id="f_address" rows="2"></textarea></div>
+          <div class="field"><label>ลิงก์ Google Maps</label><input id="f_google_maps_url" placeholder="https://maps.google.com/..." /></div>
+          <div class="field-row">
+            <div class="field"><label>วันที่ไปดู</label><input id="f_visit_date" type="date" /></div>
+            <div class="field"><label>ไปดูโดย</label><input id="f_visited_by" placeholder="เช่น บอสตอง" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>โครงสร้างอาคาร</legend>
+          <div class="field-row">
+            <div class="field"><label>จำนวนห้องทั้งหมด</label><input id="f_total_rooms" type="number" min="0" /></div>
+            <div class="field"><label>จำนวนชั้น</label><input id="f_floors" type="number" min="0" /></div>
+          </div>
+          <div class="checks" style="margin-bottom:10px">
+            <label><input id="f_has_elevator" type="checkbox" /> มีลิฟต์</label>
+            <label><input id="f_has_parking" type="checkbox" /> มีที่จอดรถ</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>ตัวเลขธุรกิจ (Rent to Rent)</legend>
+          <div class="field-row">
+            <div class="field"><label>ค่าเช่าที่เสนอ (บาท/เดือน)</label><input id="f_asking_rent_monthly" type="number" min="0" /></div>
+            <div class="field"><label>ระยะสัญญา (ปี)</label><input id="f_lease_term_years" type="number" min="0" step="0.5" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>เงินประกัน (บาท)</label><input id="f_deposit" type="number" min="0" /></div>
+            <div class="field"><label>งบรีโนเวทประมาณการ (บาท)</label><input id="f_estimated_renovation_cost" type="number" min="0" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Occupancy ปัจจุบัน (%)</label><input id="f_current_occupancy_pct" type="number" min="0" max="100" /></div>
+            <div class="field"><label>คะแนนความน่าสนใจ (1-10)</label><input id="f_score" type="number" min="1" max="10" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>ราคาห้องรายวันปัจจุบัน (บาท)</label><input id="f_current_avg_daily_rate" type="number" min="0" /></div>
+            <div class="field"><label>ราคาห้องรายเดือนปัจจุบัน (บาท)</label><input id="f_current_avg_monthly_rate" type="number" min="0" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>สรุปการประเมิน</legend>
+          <div class="field"><label>ข้อดี</label><textarea id="f_pros" rows="2"></textarea></div>
+          <div class="field"><label>ข้อเสีย/ความเสี่ยง</label><textarea id="f_cons" rows="2"></textarea></div>
+          <div class="field"><label>โน้ตอื่นๆ</label><textarea id="f_notes" rows="3"></textarea></div>
+        </fieldset>
+      </div>
+
+      <div>
+        <fieldset>
+          <legend>รูปถ่ายหน้างาน</legend>
+          <div class="gallery" id="gallery"></div>
+          <div class="dropzone" id="dropzone">
+            คลิกหรือลากรูปมาวางที่นี่เพื่ออัปโหลด<br />
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+          </div>
+          <div id="uploadStatus" class="modal-msg"></div>
+        </fieldset>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div>
+        <button id="deleteBtn" class="danger" onclick="deleteProspect()" hidden>ลบรายการนี้</button>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span class="modal-msg" id="modalMsg"></span>
+        <button class="ghost" onclick="closeModal()">ปิด</button>
+        <button onclick="saveProspect()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const FUNCTION_BASE = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-property-scout";
+  const TOKEN_KEY = "property_scout_token";
+
+  const STATUS_COLS = [
+    { key: "scouting",    label: "กำลังสำรวจ" },
+    { key: "negotiating", label: "กำลังเจรจา" },
+    { key: "signed",      label: "เซ็นสัญญาแล้ว" },
+    { key: "rejected",    label: "ตัด/ไม่เอา" },
+  ];
+  const TYPE_LABEL = { hotel: "โรงแรม", apartment: "อพาร์ตเมนต์", other: "อื่นๆ" };
+
+  let prospects = [];
+  let currentId = null;
+  let currentPhotos = [];
+
+  function getToken() {
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get("k");
+    if (fromUrl) { try { localStorage.setItem(TOKEN_KEY, fromUrl); } catch (e) {} return fromUrl; }
+    try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s ?? "";
+    return div.innerHTML;
+  }
+  function money(n) { return n == null ? "-" : Number(n).toLocaleString("th-TH"); }
+
+  async function api(payload, isGet, qs) {
+    const token = getToken();
+    if (!token) throw new Error("ยังไม่มี token — เปิดลิงก์นี้พร้อม ?k=<token> ต่อท้าย URL ครั้งแรก");
+    if (isGet) {
+      const params = new URLSearchParams({ k: token, ...qs });
+      const res = await fetch(`${FUNCTION_BASE}?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } else {
+      const res = await fetch(FUNCTION_BASE, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ k: token, ...payload }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+  }
+
+  async function load() {
+    const statusLine = document.getElementById("statusLine");
+    const wrap = document.getElementById("boardWrap");
+    statusLine.className = "status-line"; statusLine.textContent = "";
+    wrap.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+    try {
+      const data = await api(null, true, { resource: "list" });
+      prospects = data.prospects || [];
+      statusLine.textContent = `ทั้งหมด ${prospects.length} ที่`;
+      populateProvinceFilter();
+      renderBoard();
+    } catch (err) {
+      statusLine.className = "status-line error";
+      statusLine.textContent = "โหลดข้อมูลไม่สำเร็จ: " + err.message;
+      wrap.innerHTML = "";
+    }
+  }
+
+  function populateProvinceFilter() {
+    const sel = document.getElementById("provinceFilter");
+    const current = sel.value;
+    const provinces = [...new Set(prospects.map(p => p.province).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">ทุกจังหวัด</option>' + provinces.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    sel.value = current;
+  }
+
+  function renderBoard() {
+    const wrap = document.getElementById("boardWrap");
+    const q = (document.getElementById("searchBox").value || "").trim().toLowerCase();
+    const provinceFilter = document.getElementById("provinceFilter").value;
+
+    const filtered = prospects.filter(p => {
+      if (provinceFilter && p.province !== provinceFilter) return false;
+      if (!q) return true;
+      const hay = [p.name, p.province, p.district, p.address].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+
+    const board = document.createElement("div");
+    board.className = "board";
+
+    STATUS_COLS.forEach(col => {
+      const items = filtered.filter(p => p.status === col.key);
+      const colEl = document.createElement("div");
+      colEl.className = "col";
+      colEl.innerHTML = `<div class="col-head"><h2>${col.label}</h2><span class="count">${items.length}</span></div>`;
+      if (!items.length) {
+        colEl.innerHTML += '<div class="empty">ยังไม่มีรายการ</div>';
+      } else {
+        items.forEach(p => colEl.appendChild(renderCard(p)));
+      }
+      board.appendChild(colEl);
+    });
+
+    wrap.innerHTML = "";
+    wrap.appendChild(board);
+  }
+
+  function renderCard(p) {
+    const card = document.createElement("div");
+    card.className = "pcard";
+    card.onclick = () => openDetail(p.id);
+    const loc = [p.district, p.province].filter(Boolean).join(", ") || "-";
+    card.innerHTML = `
+      <span class="type-tag">${TYPE_LABEL[p.property_type] || p.property_type}</span>
+      <div class="pname">${escapeHtml(p.name)}</div>
+      <div class="ploc">${escapeHtml(loc)}</div>
+      <div class="prow"><span class="lbl">ค่าเช่าเสนอ</span><span>${p.asking_rent_monthly != null ? money(p.asking_rent_monthly) + " บ./ด." : "-"}</span></div>
+      <div class="prow"><span class="lbl">ห้อง</span><span>${p.total_rooms ?? "-"}</span></div>
+      <div class="pmeta">
+        <span class="score-badge">${p.score != null ? "★ " + p.score + "/10" : "ยังไม่ให้คะแนน"}</span>
+        <span class="photo-badge">📷 ${p.photo_count || 0}</span>
+      </div>
+    `;
+    return card;
+  }
+
+  // ---- Modal ----
+  const FIELD_IDS = [
+    "name","property_type","status","province","district","address","google_maps_url",
+    "visit_date","visited_by","total_rooms","floors","asking_rent_monthly","lease_term_years",
+    "deposit","estimated_renovation_cost","current_occupancy_pct","score",
+    "current_avg_daily_rate","current_avg_monthly_rate","pros","cons","notes",
+  ];
+  const CHECK_IDS = ["has_elevator","has_parking"];
+
+  function clearForm() {
+    FIELD_IDS.forEach(id => { const el = document.getElementById("f_" + id); if (el) el.value = ""; });
+    CHECK_IDS.forEach(id => { const el = document.getElementById("f_" + id); if (el) el.checked = false; });
+    document.getElementById("f_property_type").value = "hotel";
+    document.getElementById("f_status").value = "scouting";
+    document.getElementById("gallery").innerHTML = "";
+    document.getElementById("uploadStatus").textContent = "";
+    document.getElementById("modalMsg").textContent = "";
+    document.getElementById("modalMsg").className = "modal-msg";
+    currentPhotos = [];
+  }
+
+  function openNew() {
+    currentId = null;
+    clearForm();
+    document.getElementById("modalTitle").textContent = "เพิ่มที่ใหม่";
+    document.getElementById("deleteBtn").hidden = true;
+    document.getElementById("overlay").hidden = false;
+  }
+
+  async function openDetail(id) {
+    currentId = id;
+    clearForm();
+    document.getElementById("modalTitle").textContent = "กำลังโหลด...";
+    document.getElementById("overlay").hidden = false;
+    try {
+      const data = await api(null, true, { resource: "detail", id });
+      const p = data.prospect;
+      FIELD_IDS.forEach(id2 => {
+        const el = document.getElementById("f_" + id2);
+        if (el && p[id2] != null) el.value = p[id2];
+      });
+      CHECK_IDS.forEach(id2 => {
+        const el = document.getElementById("f_" + id2);
+        if (el) el.checked = !!p[id2];
+      });
+      document.getElementById("modalTitle").textContent = p.name;
+      document.getElementById("deleteBtn").hidden = false;
+      currentPhotos = data.photos || [];
+      renderGallery();
+    } catch (err) {
+      document.getElementById("modalMsg").className = "modal-msg error";
+      document.getElementById("modalMsg").textContent = "โหลดไม่สำเร็จ: " + err.message;
+    }
+  }
+
+  function closeModal() { document.getElementById("overlay").hidden = true; }
+
+  function renderGallery() {
+    const g = document.getElementById("gallery");
+    g.innerHTML = "";
+    currentPhotos.forEach(ph => {
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `<img src="${ph.url}" loading="lazy" /><button class="rm" title="ลบรูป">&times;</button>`;
+      div.querySelector(".rm").onclick = (e) => { e.stopPropagation(); removePhoto(ph.id); };
+      g.appendChild(div);
+    });
+  }
+
+  async function removePhoto(photoId) {
+    if (!confirm("ลบรูปนี้?")) return;
+    try {
+      await api({ resource: "delete_photo", photo_id: photoId }, false);
+      currentPhotos = currentPhotos.filter(p => p.id !== photoId);
+      renderGallery();
+    } catch (err) {
+      alert("ลบรูปไม่สำเร็จ: " + err.message);
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadFiles(files) {
+    if (!currentId) {
+      document.getElementById("uploadStatus").className = "modal-msg error";
+      document.getElementById("uploadStatus").textContent = "กรุณากดบันทึกข้อมูลก่อน แล้วค่อยอัปโหลดรูป";
+      return;
+    }
+    const statusEl = document.getElementById("uploadStatus");
+    for (const file of files) {
+      statusEl.className = "modal-msg";
+      statusEl.textContent = `กำลังอัปโหลด ${file.name}...`;
+      try {
+        const b64 = await fileToBase64(file);
+        const data = await api({
+          resource: "upload_photo", prospect_id: currentId, filename: file.name, content_base64: b64,
+        }, false);
+        currentPhotos.push(data.photo);
+        renderGallery();
+      } catch (err) {
+        statusEl.className = "modal-msg error";
+        statusEl.textContent = `อัปโหลด ${file.name} ไม่สำเร็จ: ${err.message}`;
+        return;
+      }
+    }
+    statusEl.className = "modal-msg ok";
+    statusEl.textContent = "อัปโหลดเสร็จแล้ว";
+  }
+
+  function collectForm() {
+    const payload = {};
+    FIELD_IDS.forEach(id => {
+      const el = document.getElementById("f_" + id);
+      let v = el.value;
+      if (v === "") { payload[id] = null; return; }
+      if (el.type === "number") v = Number(v);
+      payload[id] = v;
+    });
+    CHECK_IDS.forEach(id => {
+      payload[id] = document.getElementById("f_" + id).checked;
+    });
+    return payload;
+  }
+
+  async function saveProspect() {
+    const msg = document.getElementById("modalMsg");
+    const payload = collectForm();
+    if (!payload.name) {
+      msg.className = "modal-msg error"; msg.textContent = "กรุณาใส่ชื่อสถานที่"; return;
+    }
+    msg.className = "modal-msg"; msg.textContent = "กำลังบันทึก...";
+    try {
+      const data = await api({ resource: "save", id: currentId, ...payload }, false);
+      currentId = data.prospect.id;
+      document.getElementById("deleteBtn").hidden = false;
+      document.getElementById("modalTitle").textContent = data.prospect.name;
+      msg.className = "modal-msg ok"; msg.textContent = "บันทึกแล้ว";
+      await load();
+    } catch (err) {
+      msg.className = "modal-msg error"; msg.textContent = "บันทึกไม่สำเร็จ: " + err.message;
+    }
+  }
+
+  async function deleteProspect() {
+    if (!currentId) return;
+    if (!confirm("ลบรายการนี้และรูปทั้งหมดถาวร?")) return;
+    try {
+      await api({ resource: "delete", id: currentId }, false);
+      closeModal();
+      await load();
+    } catch (err) {
+      alert("ลบไม่สำเร็จ: " + err.message);
+    }
+  }
+
+  // dropzone wiring
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("fileInput");
+  dropzone.onclick = () => fileInput.click();
+  fileInput.onchange = () => { if (fileInput.files.length) uploadFiles(fileInput.files); fileInput.value = ""; };
+  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("drag"); };
+  dropzone.ondragleave = () => dropzone.classList.remove("drag");
+  dropzone.ondrop = (e) => {
+    e.preventDefault(); dropzone.classList.remove("drag");
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+  };
+  document.getElementById("overlay").addEventListener("click", (e) => {
+    if (e.target.id === "overlay") closeModal();
+  });
+
+  load();
+</script>
+</body>
+</html>
