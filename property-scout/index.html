@@ -266,7 +266,7 @@
           <div class="dropzone" id="dropzone">
             <span class="dz-icon">📷🎥</span>
             <div class="dz-main">แตะเพื่อเลือกรูป/วิดีโอ</div>
-            <div class="dz-sub">เลือกได้ทีละหลายไฟล์ · ลากมาวางก็ได้</div>
+            <div class="dz-sub">เลือกได้ทีละหลายไฟล์ · ลากมาวางก็ได้ · ไฟล์ละไม่เกิน 50MB</div>
             <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" />
           </div>
           <div id="uploadStatus" class="modal-msg"></div>
@@ -545,12 +545,13 @@
     const el = document.querySelector(`#pending-${key} .pct`);
     if (el) el.textContent = pct + "%";
   }
-  function markFailed(key, filename, retryFn) {
+  function markFailed(key, filename, reason, retryFn) {
     const div = document.getElementById("pending-" + key);
     if (!div) return;
     div.className = "thumb failed";
-    div.innerHTML = `<div class="fname">${escapeHtml(filename)}<br/>อัปโหลดไม่สำเร็จ</div><button class="retry">ลองใหม่</button>`;
-    div.querySelector(".retry").onclick = (e) => { e.stopPropagation(); div.remove(); retryFn(); };
+    const retryBtn = retryFn ? `<button class="retry">ลองใหม่</button>` : "";
+    div.innerHTML = `<div class="fname">${escapeHtml(filename)}<br/>${escapeHtml(reason)}</div>${retryBtn}`;
+    if (retryFn) div.querySelector(".retry").onclick = (e) => { e.stopPropagation(); div.remove(); retryFn(); };
   }
   function removePendingTile(key) {
     const div = document.getElementById("pending-" + key);
@@ -568,6 +569,13 @@
     }
   }
 
+  // Supabase project plan (Free) caps every Storage upload at 50MB regardless of
+  // the bucket's own file_size_limit — this is a project-level "Global file size
+  // limit" (Storage Settings in the Supabase dashboard), only raisable on a paid
+  // plan. Check client-side first so oversized files fail instantly with a clear
+  // reason instead of a slow upload that dies at 50MB with a cryptic error.
+  const MAX_UPLOAD_MB = 50;
+
   function putWithProgress(url, file, onProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -576,8 +584,20 @@
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
       };
-      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error("HTTP " + xhr.status));
-      xhr.onerror = () => reject(new Error("เครือข่ายขัดข้อง"));
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { resolve(); return; }
+        let detail = "HTTP " + xhr.status;
+        try {
+          const body = JSON.parse(xhr.responseText);
+          if (body.error === "Payload too large" || body.code === "EntityTooLarge") {
+            detail = `ไฟล์ใหญ่เกิน ${MAX_UPLOAD_MB}MB (ข้อจำกัดปัจจุบันของระบบ)`;
+          } else if (body.message) {
+            detail = body.message;
+          }
+        } catch (e) {}
+        reject(new Error(detail));
+      };
+      xhr.onerror = () => reject(new Error("เครือข่ายขัดข้อง — เช็คสัญญาณแล้วลองใหม่"));
       xhr.send(file);
     });
   }
@@ -606,6 +626,11 @@
 
   async function uploadOne(file, key) {
     const isVideo = file.type.startsWith("video/");
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > MAX_UPLOAD_MB) {
+      markFailed(key, file.name, `ไฟล์ ${sizeMb.toFixed(0)}MB ใหญ่เกิน ${MAX_UPLOAD_MB}MB — ตัดคลิปให้สั้นลงหรือลดความละเอียดแล้วลองใหม่`, null);
+      return false;
+    }
     try {
       const req = await api({
         resource: "request_media_upload", prospect_id: currentId,
@@ -621,7 +646,7 @@
       renderGallery();
       return true;
     } catch (err) {
-      markFailed(key, file.name, () => uploadFiles([file]));
+      markFailed(key, file.name, err.message || "อัปโหลดไม่สำเร็จ", () => uploadFiles([file]));
       return false;
     }
   }
