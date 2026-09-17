@@ -246,10 +246,13 @@
           </div>
           <div class="field-row">
             <div class="field"><label>เงินประกัน (บาท)</label><input id="f_deposit" type="number" min="0" /></div>
-            <div class="field"><label>งบรีโนเวทประมาณการ (บาท)</label><input id="f_estimated_renovation_cost" type="number" min="0" /></div>
+            <div class="field"><label>เงินกินเปล่า / Key Money (บาท)</label><input id="f_key_money" type="number" min="0" placeholder="จ่ายครั้งเดียว ไม่คืน" /></div>
           </div>
           <div class="field-row">
+            <div class="field"><label>งบรีโนเวทประมาณการ (บาท)</label><input id="f_estimated_renovation_cost" type="number" min="0" /></div>
             <div class="field"><label>Occupancy ปัจจุบัน (%)</label><input id="f_current_occupancy_pct" type="number" min="0" max="100" /></div>
+          </div>
+          <div class="field-row">
             <div class="field"><label>คะแนนความน่าสนใจ (1-10)</label><input id="f_score" type="number" min="1" max="10" /></div>
           </div>
           <div class="field-row">
@@ -429,6 +432,7 @@
       <div class="prow"><span class="lbl">ค่าเช่าเสนอ</span><span>${p.asking_rent_monthly != null ? money(p.asking_rent_monthly) + " บ./ด." : "-"}</span></div>
       <div class="prow"><span class="lbl">ห้อง</span><span>${p.total_rooms ?? "-"}</span></div>
       <div class="prow"><span class="lbl">ค่าเช่า/ห้อง</span><span>${rentPerRoom(p.asking_rent_monthly, p.total_rooms)}</span></div>
+      ${p.key_money != null ? `<div class="prow"><span class="lbl">เงินกินเปล่า</span><span>${money(p.key_money)} บ.</span></div>` : ""}
       <div class="pmeta">
         <span class="score-badge">${p.score != null ? "★ " + p.score + "/10" : "ยังไม่ให้คะแนน"}</span>
         <span style="display:flex; gap:8px; align-items:center">
@@ -446,7 +450,7 @@
   const FIELD_IDS = [
     "name","property_type","status","province","district","address","google_maps_url",
     "visit_date","visited_by","total_rooms","floors","asking_rent_monthly","lease_term_years",
-    "deposit","estimated_renovation_cost","current_occupancy_pct","score",
+    "deposit","key_money","estimated_renovation_cost","current_occupancy_pct","score",
     "current_avg_daily_rate","current_avg_monthly_rate","pros","cons","notes","feasibility_sheet_url",
   ];
   const CHECK_IDS = ["has_elevator","has_parking"];
