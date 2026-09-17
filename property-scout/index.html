@@ -213,7 +213,7 @@
         <fieldset>
           <legend>โครงสร้างอาคาร</legend>
           <div class="field-row">
-            <div class="field"><label>จำนวนห้องทั้งหมด</label><input id="f_total_rooms" type="number" min="0" /></div>
+            <div class="field"><label>จำนวนห้องทั้งหมด</label><input id="f_total_rooms" type="number" min="0" oninput="updateRentPerRoomHint()" /></div>
             <div class="field"><label>จำนวนชั้น</label><input id="f_floors" type="number" min="0" /></div>
           </div>
           <div class="checks" style="margin-bottom:10px">
@@ -225,7 +225,11 @@
         <fieldset>
           <legend>ตัวเลขธุรกิจ (Rent to Rent)</legend>
           <div class="field-row">
-            <div class="field"><label>ค่าเช่าที่เสนอ (บาท/เดือน)</label><input id="f_asking_rent_monthly" type="number" min="0" /></div>
+            <div class="field">
+              <label>ค่าเช่าที่เสนอ (บาท/เดือน)</label>
+              <input id="f_asking_rent_monthly" type="number" min="0" oninput="updateRentPerRoomHint()" />
+              <div id="rentPerRoomHint" style="font-size:11px; color:var(--muted); margin-top:3px"></div>
+            </div>
             <div class="field"><label>ระยะสัญญา (ปี)</label><input id="f_lease_term_years" type="number" min="0" step="0.5" /></div>
           </div>
           <div class="field-row">
@@ -312,6 +316,16 @@
     return div.innerHTML;
   }
   function money(n) { return n == null ? "-" : Number(n).toLocaleString("th-TH"); }
+  function rentPerRoom(rent, rooms) {
+    if (rent == null || !rooms) return "-";
+    return money(Math.round(rent / rooms)) + " บ./ห้อง";
+  }
+  function updateRentPerRoomHint() {
+    const rent = Number(document.getElementById("f_asking_rent_monthly").value) || null;
+    const rooms = Number(document.getElementById("f_total_rooms").value) || null;
+    const hint = document.getElementById("rentPerRoomHint");
+    hint.textContent = (rent && rooms) ? `= ${rentPerRoom(rent, rooms)}/เดือน` : "";
+  }
 
   async function api(payload, isGet, qs) {
     const token = getToken();
@@ -402,6 +416,7 @@
       <div class="ploc">${escapeHtml(loc)}</div>
       <div class="prow"><span class="lbl">ค่าเช่าเสนอ</span><span>${p.asking_rent_monthly != null ? money(p.asking_rent_monthly) + " บ./ด." : "-"}</span></div>
       <div class="prow"><span class="lbl">ห้อง</span><span>${p.total_rooms ?? "-"}</span></div>
+      <div class="prow"><span class="lbl">ค่าเช่า/ห้อง</span><span>${rentPerRoom(p.asking_rent_monthly, p.total_rooms)}</span></div>
       <div class="pmeta">
         <span class="score-badge">${p.score != null ? "★ " + p.score + "/10" : "ยังไม่ให้คะแนน"}</span>
         <span style="display:flex; gap:8px; align-items:center">
@@ -436,6 +451,7 @@
     document.getElementById("modalMsg").textContent = "";
     document.getElementById("modalMsg").className = "modal-msg";
     currentPhotos = [];
+    updateRentPerRoomHint();
   }
 
   function openNew() {
@@ -464,6 +480,7 @@
       });
       document.getElementById("modalTitle").textContent = p.name;
       document.getElementById("deleteBtn").hidden = false;
+      updateRentPerRoomHint();
       currentPhotos = data.photos || [];
       renderGallery();
     } catch (err) {
