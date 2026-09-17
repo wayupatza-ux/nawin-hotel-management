@@ -489,7 +489,7 @@
       const isVideo = ph.media_type === "video";
       div.innerHTML = isVideo
         ? `<video src="${ph.url}" muted playsinline preload="metadata"></video><span class="kind">🎥 วิดีโอ</span><button class="rm" title="ลบ">&times;</button>`
-        : `<img src="${ph.url}" loading="lazy" /><button class="rm" title="ลบ">&times;</button>`;
+        : `<img src="${ph.thumb_url || ph.url}" loading="lazy" /><button class="rm" title="ลบ">&times;</button>`;
       div.querySelector(".rm").onclick = (e) => { e.stopPropagation(); removePhoto(ph.id); };
       div.addEventListener("click", () => openLightbox(ph.url, isVideo));
       g.appendChild(div);
