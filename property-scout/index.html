@@ -147,6 +147,21 @@
     border: none; width: 38px; height: 38px; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 1;
   }
   .lb-note { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.6); font-size: 12px; }
+  .lb-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.12); color: #fff;
+    border: none; width: 46px; height: 46px; border-radius: 50%; font-size: 26px; line-height: 1; cursor: pointer; z-index: 1;
+  }
+  .lb-nav:hover { background: rgba(255,255,255,.22); }
+  .lb-nav[hidden] { display: none; }
+  .lb-prev { left: 12px; }
+  .lb-next { right: 12px; }
+  .lb-counter {
+    position: absolute; top: 16px; left: 20px; color: rgba(255,255,255,.75); font-size: 13px;
+  }
+  @media (max-width: 640px) {
+    .lb-nav { width: 40px; height: 40px; font-size: 22px; }
+    .lb-prev { left: 4px; } .lb-next { right: 4px; }
+  }
 
   .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 10px; flex-wrap: wrap; }
   .modal-msg { font-size: 12px; color: var(--muted); }
@@ -299,6 +314,9 @@
 
 <div class="lightbox" id="lightbox" hidden>
   <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  <button class="lb-nav lb-prev" onclick="lightboxStep(-1)" aria-label="รูปก่อนหน้า">&#8249;</button>
+  <button class="lb-nav lb-next" onclick="lightboxStep(1)" aria-label="รูปถัดไป">&#8250;</button>
+  <div id="lightboxCounter" class="lb-counter"></div>
   <div id="lightboxContent"></div>
 </div>
 
@@ -527,27 +545,68 @@
         ? `<div class="video-placeholder">▶<span class="kind">🎥 วิดีโอ</span></div><button class="rm" title="ลบ">&times;</button>`
         : `<img src="${ph.thumb_url || ph.url}" loading="lazy" /><button class="rm" title="ลบ">&times;</button>`;
       div.querySelector(".rm").onclick = (e) => { e.stopPropagation(); removePhoto(ph.id); };
-      div.addEventListener("click", () => openLightbox(ph.url, isVideo));
+      div.addEventListener("click", () => openLightbox(currentPhotos.indexOf(ph)));
       g.appendChild(div);
     });
   }
 
-  function openLightbox(url, isVideo) {
+  let lightboxIndex = -1;
+
+  function openLightbox(index) {
+    lightboxIndex = index;
+    renderLightbox();
+    document.getElementById("lightbox").hidden = false;
+  }
+
+  function renderLightbox() {
+    const ph = currentPhotos[lightboxIndex];
+    if (!ph) return;
+    const isVideo = ph.media_type === "video";
     const content = document.getElementById("lightboxContent");
     // No autoplay: phone clips can be tens of MB, so force-buffering on open just
     // makes the player look frozen. Let the user hit play when ready instead.
     content.innerHTML = isVideo
-      ? `<video src="${url}" controls playsinline preload="metadata"></video><div class="lb-note">ถ้าคลิปใหญ่ อาจใช้เวลาบัฟเฟอร์สักครู่ก่อนเล่นได้ลื่น</div>`
-      : `<img src="${url}" />`;
-    document.getElementById("lightbox").hidden = false;
+      ? `<video src="${ph.url}" controls playsinline preload="metadata"></video><div class="lb-note">ถ้าคลิปใหญ่ อาจใช้เวลาบัฟเฟอร์สักครู่ก่อนเล่นได้ลื่น</div>`
+      : `<img src="${ph.url}" />`;
+    document.getElementById("lightboxCounter").textContent = currentPhotos.length > 1
+      ? `${lightboxIndex + 1} / ${currentPhotos.length}` : "";
+    const multi = currentPhotos.length > 1;
+    document.querySelector(".lb-prev").hidden = !multi;
+    document.querySelector(".lb-next").hidden = !multi;
   }
+
+  function lightboxStep(dir) {
+    if (!currentPhotos.length) return;
+    lightboxIndex = (lightboxIndex + dir + currentPhotos.length) % currentPhotos.length;
+    renderLightbox();
+  }
+
   function closeLightbox() {
     document.getElementById("lightbox").hidden = true;
     document.getElementById("lightboxContent").innerHTML = "";
+    lightboxIndex = -1;
   }
   document.getElementById("lightbox").addEventListener("click", (e) => {
     if (e.target.id === "lightbox") closeLightbox();
   });
+  document.addEventListener("keydown", (e) => {
+    if (document.getElementById("lightbox").hidden) return;
+    if (e.key === "Escape") closeLightbox();
+    else if (e.key === "ArrowLeft") lightboxStep(-1);
+    else if (e.key === "ArrowRight") lightboxStep(1);
+  });
+  // Swipe left/right to move between photos on touch devices.
+  (() => {
+    let touchStartX = null;
+    const lb = document.getElementById("lightbox");
+    lb.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+    lb.addEventListener("touchend", (e) => {
+      if (touchStartX == null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) lightboxStep(dx > 0 ? -1 : 1);
+      touchStartX = null;
+    }, { passive: true });
+  })();
 
   function addPendingTile(key, label) {
     const g = document.getElementById("gallery");
