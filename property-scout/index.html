@@ -196,12 +196,18 @@
             <div class="field"><label>อำเภอ/เขต</label><input id="f_district" placeholder="เช่น บางละมุง" /></div>
           </div>
           <div class="field"><label>ที่อยู่</label><textarea id="f_address" rows="2"></textarea></div>
-          <div class="field"><label>ลิงก์ Google Maps</label><input id="f_google_maps_url" placeholder="https://maps.google.com/..." /></div>
+          <div class="field">
+            <label>ลิงก์ Google Maps</label>
+            <div style="display:flex; gap:6px">
+              <input id="f_google_maps_url" placeholder="https://maps.google.com/..." />
+              <button type="button" class="secondary" style="white-space:nowrap" onclick="openLinkField('f_google_maps_url')">เปิด ↗</button>
+            </div>
+          </div>
           <div class="field">
             <label>ลิงก์ Feasibility Sheet (Google Sheet)</label>
             <div style="display:flex; gap:6px">
               <input id="f_feasibility_sheet_url" placeholder="https://docs.google.com/spreadsheets/..." />
-              <button type="button" class="secondary" id="openFeasibilityBtn" style="white-space:nowrap" onclick="openFeasibilityLink()">เปิด ↗</button>
+              <button type="button" class="secondary" style="white-space:nowrap" onclick="openLinkField('f_feasibility_sheet_url')">เปิด ↗</button>
             </div>
           </div>
           <div class="field-row">
@@ -421,14 +427,12 @@
         <span class="score-badge">${p.score != null ? "★ " + p.score + "/10" : "ยังไม่ให้คะแนน"}</span>
         <span style="display:flex; gap:8px; align-items:center">
           <span class="photo-badge">📷 ${p.photo_count || 0}</span>
+          ${p.google_maps_url ? `<a href="${escapeHtml(p.google_maps_url)}" target="_blank" rel="noopener" class="photo-badge" title="เปิด Google Maps" style="text-decoration:none">📍</a>` : ""}
           ${p.feasibility_sheet_url ? `<a href="${escapeHtml(p.feasibility_sheet_url)}" target="_blank" rel="noopener" class="photo-badge" title="เปิด Feasibility Sheet" style="text-decoration:none">📊</a>` : ""}
         </span>
       </div>
     `;
-    if (p.feasibility_sheet_url) {
-      const link = card.querySelector("a");
-      if (link) link.onclick = (e) => e.stopPropagation();
-    }
+    card.querySelectorAll("a").forEach(link => { link.onclick = (e) => e.stopPropagation(); });
     return card;
   }
 
@@ -491,9 +495,9 @@
 
   function closeModal() { document.getElementById("overlay").hidden = true; }
 
-  function openFeasibilityLink() {
-    const val = document.getElementById("f_feasibility_sheet_url").value.trim();
-    if (!val) { alert("ยังไม่มีลิงก์ Feasibility Sheet — กรอกแล้วกดบันทึกก่อน"); return; }
+  function openLinkField(fieldId) {
+    const val = document.getElementById(fieldId).value.trim();
+    if (!val) { alert("ยังไม่มีลิงก์ในช่องนี้"); return; }
     window.open(val, "_blank", "noopener");
   }
 
