@@ -87,6 +87,15 @@
       text-align: center;
       font-size: 14px;
     }
+    .open-shift-banner {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
     .loading {
       text-align: center;
       color: var(--muted);
@@ -146,17 +155,32 @@
           content.innerHTML = `<div class="error-box">ลิงก์นี้ใช้ไม่ได้แล้ว: ${data.error || "unknown error"} — ติดต่อบอสตองเพื่อขอลิงก์ใหม่</div>`;
           return;
         }
-        renderMe(data.staff, token);
+        renderMe(data.staff, token, data.open_shift);
         document.getElementById("today-footer").textContent = todayThai();
       } catch (err) {
         content.innerHTML = `<div class="error-box">เกิดข้อผิดพลาด: ${err.message}</div>`;
       }
     }
 
-    function renderMe(staff, token) {
+    function formatThaiDateTime(iso) {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString("th-TH-u-ca-buddhist", { day: "numeric", month: "long" });
+      const time = d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      return `${date} เวลา ${time} น.`;
+    }
+
+    function renderMe(staff, token, openShift) {
       const content = document.getElementById("content");
       content.className = "";
       content.innerHTML = "";
+
+      if (openShift) {
+        const banner = document.createElement("div");
+        banner.className = "open-shift-banner";
+        banner.id = "open-shift-banner";
+        banner.textContent = `⚠️ คุณเช็คอินค้างอยู่ตั้งแต่ ${formatThaiDateTime(openShift.checkin_at)} ยังไม่ได้กดเลิกงาน — ถ้ากะนั้นจบไปแล้วจริง ให้กด "เลิกงาน" ก่อนเช็คอินใหม่`;
+        content.appendChild(banner);
+      }
 
       const card = document.createElement("div");
       card.className = "card";
@@ -184,6 +208,31 @@
       const statusLine = document.createElement("div");
       statusLine.className = "status-line";
 
+      async function refreshOpenShiftBanner(tok) {
+        try {
+          const res = await fetch(`${API_BASE}?action=me&k=${encodeURIComponent(tok)}`);
+          const data = await res.json();
+          const existing = document.getElementById("open-shift-banner");
+          if (!data.success) return;
+          if (data.open_shift) {
+            const text = `⚠️ คุณเช็คอินค้างอยู่ตั้งแต่ ${formatThaiDateTime(data.open_shift.checkin_at)} ยังไม่ได้กดเลิกงาน — ถ้ากะนั้นจบไปแล้วจริง ให้กด "เลิกงาน" ก่อนเช็คอินใหม่`;
+            if (existing) {
+              existing.textContent = text;
+            } else {
+              const banner = document.createElement("div");
+              banner.className = "open-shift-banner";
+              banner.id = "open-shift-banner";
+              banner.textContent = text;
+              card.before(banner);
+            }
+          } else if (existing) {
+            existing.remove();
+          }
+        } catch {
+          // non-fatal — the banner is a convenience, not the source of truth
+        }
+      }
+
       async function submit(status) {
         presentBtn.disabled = true;
         checkoutBtn.disabled = true;
@@ -202,9 +251,11 @@
                 ? `บันทึกแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
                 : `บันทึกเลิกงานแล้ว ✅ เวลา ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
             statusLine.className = "status-line status-ok";
+            refreshOpenShiftBanner(token);
           } else {
             statusLine.textContent = `บันทึกไม่สำเร็จ: ${data.error || "unknown error"}`;
             statusLine.className = "status-line status-err";
+            if (data.open_shift) refreshOpenShiftBanner(token);
           }
         } catch (err) {
           statusLine.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
