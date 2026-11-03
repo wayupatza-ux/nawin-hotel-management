@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>เตรียมเปิด The Nawin Pattaya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1c1c; --muted: #6b6b6b; --line: #e0e0e0;
+    --accent: #16302a; --accent-soft: #eef0ec; --bg: #f4f3ee; --card: #ffffff;
+    --danger: #b23a3a; --warn: #b7791f; --good: #256b3a; --info: #2b6cb0; --idle: #a0a0a0;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Sarabun", "Noto Sans Thai", sans-serif; color: var(--ink); background: var(--bg); margin: 0; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .hero { background: var(--accent); color: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .hero .pct { font-size: 40px; font-weight: 700; line-height: 1; }
+  .hero .lbl { font-size: 13px; opacity: .85; }
+  .hero .cd { text-align: right; }
+  .hero .cd .n { font-size: 30px; font-weight: 700; line-height: 1; }
+  .hero .bar { grid-column: span 2; height: 12px; background: rgba(255,255,255,.2); border-radius: 6px; position: relative; overflow: hidden; }
+  .hero .bar .fill { position: absolute; inset: 0 auto 0 0; background: #9ae6b4; border-radius: 6px; }
+  .hero .bar .plan { position: absolute; top: -2px; bottom: -2px; width: 3px; background: #fbd38d; }
+  .hero .hint { grid-column: span 2; font-size: 12px; opacity: .9; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .kpi.click { cursor: pointer; }
+  .kpi.active { outline: 2px solid var(--accent); }
+  .kpi .n { font-size: 22px; font-weight: 700; line-height: 1.15; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); }
+  .grp-row { display: grid; grid-template-columns: 150px 1fr 48px; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; cursor: pointer; }
+  .pbar { height: 9px; background: #ececec; border-radius: 5px; position: relative; overflow: hidden; }
+  .pbar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; }
+  .pbar .plan { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  tr.zr { cursor: pointer; }
+  tr.zr:hover td { background: #fafaf7; }
+  tr.tot td { font-weight: 700; border-top: 2px solid var(--line); }
+  .over { color: var(--danger); font-weight: 700; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; }
+  .tab { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 20px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  .tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar .grow { flex: 1; }
+  .zone-h { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 6px; font-size: 14px; font-weight: 700; color: var(--accent); gap: 8px; }
+  .zone-h span { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .task { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--idle); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px; cursor: pointer; }
+  .task:hover { border-color: #c9c9c9; }
+  .task .t1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .task .title { font-weight: 600; font-size: 14px; }
+  .task .meta { font-size: 12px; color: var(--muted); margin: 3px 0 5px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .task .pr { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; }
+  .task .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .tag { display: inline-block; flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; color: #fff; }
+  .loading { text-align: center; color: var(--muted); padding: 50px 0; }
+  .err { background: #fdecec; color: var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
+  .backdrop.show { display: flex; }
+  .modal { background: var(--card); width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 16px; }
+  @media (min-width: 600px) { .backdrop { align-items: center; } .modal { border-radius: 14px; } }
+  .modal h3 { margin: 0 0 2px; font-size: 18px; color: var(--accent); }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 3px; }
+  select, input[type=text], input[type=number], input[type=date], textarea { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  textarea { min-height: 56px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick { display: flex; gap: 6px; margin-top: 6px; }
+  .quick button { flex: 1; font: inherit; font-size: 13px; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); cursor: pointer; }
+  .quick button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  input[type=range] { width: 100%; }
+  .pv { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 10px; }
+  .exp { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+  .exp h4 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .erow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed var(--line); align-items: center; }
+  .erow .x { border: none; background: none; color: var(--danger); font-size: 16px; cursor: pointer; }
+  .eadd { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; font: inherit; font-size: 15px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  .btn.sm { flex: none; font-size: 13px; padding: 7px 12px; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.danger { color: var(--danger); border-color: #e8c4c4; }
+  .btn:disabled { opacity: .6; }
+  .legend { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  @media (max-width: 520px) { .grp-row { grid-template-columns: 110px 1fr 42px; } .hero .pct { font-size: 34px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>เตรียมเปิด — The Nawin Pattaya</h1>
+  <div class="sub" id="sub">กำลังโหลด…</div>
+  <div id="err"></div>
+  <div id="hero"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="panel">
+    <h2>ความคืบหน้าแยกสายงาน</h2>
+    <div id="groups"></div>
+    <div class="legend">แถบสี = ทำได้จริง (ฟ้า = กำลังทำ, เขียว = เสร็จ) · เส้นส้ม = ควรถึงตามแผนวันนี้ · % รวมคิดแบบถ่วงน้ำหนัก งานรีโนเวทใช้งบเป็นน้ำหนัก (ทุก 10,000 บาท = 1 แต้ม) งานที่ไม่มีงบ (OTA ระบบ พนักงาน เอกสาร) งานละ 8 แต้ม</div>
+  </div>
+  <div class="panel">
+    <h2>งบลงทุนแยกโซน (เป้า vs ใช้จริง)</h2>
+    <div class="tbl-wrap" id="zones"></div>
+    <div class="legend">งบเป้า = บัญชีเงินลงทุนแนบสัญญา 3,108,000 บาท · ใช้จริง = รวมรายการจ่ายที่บันทึกในแต่ละงาน · แตะแถวเพื่อดูงานในโซนนั้น</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="toolbar">
+    <div class="tabs grow" id="stat" style="margin:0"></div>
+    <button class="btn sm primary" id="addBtn">+ เพิ่มงาน</button>
+  </div>
+  <div id="list"><div class="loading">กำลังโหลด…</div></div>
+</div>
+
+<div class="backdrop" id="bd"><div class="modal" id="modal"></div></div>
+
+<script>
+const API = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-nawin-pattaya-project";
+const TOKEN_KEY = "nawin_pattaya_project_token";
+const NAME_KEY = "nawin_pattaya_project_name";
+const OPEN_DATE = "2026-11-25";
+const CONTRACT_BUDGET = 3108000;
+const GROUPS = [
+  ["reno", "งานรีโนเวท"], ["ota", "ระบบโรงแรม & OTA"], ["backend", "ระบบหลังบ้าน"],
+  ["hr", "รับสมัครพนักงาน"], ["admin", "เอกสาร / สาธารณูปโภค"], ["preopen", "เตรียมเปิด"],
+];
+const ZONES = [
+  ["std", "ห้อง Standard (44)", "reno"], ["dlx", "ห้อง Deluxe (5)", "reno"], ["mvip", "ห้อง Mini VIP (3)", "reno"],
+  ["vip", "ห้อง VIP Family (4)", "reno"], ["lobby", "ล็อบบี้ชั้น 1", "reno"], ["corridor", "ทางเดิน / บันได ชั้น 3–8", "reno"],
+  ["rest", "ห้องอาหารชั้น 2", "reno"], ["spa", "สปา 303–308", "reno"], ["ac", "ระบบแอร์", "reno"], ["pool", "สระว่ายน้ำ", "reno"],
+  ["ext", "ทาสีภายนอกอาคาร", "reno"], ["fridge", "ตู้เย็น", "reno"], ["sign", "ป้ายและแบรนด์", "reno"],
+  ["ota", "ระบบโรงแรม & OTA (ทีมระบบ)", "ota"], ["backend", "ระบบหลังบ้าน", "backend"], ["hr", "รับสมัครพนักงาน", "hr"],
+  ["admin", "เอกสาร / สาธารณูปโภค", "admin"], ["preopen", "เตรียมเปิด", "preopen"], ["other", "อื่นๆ", "reno"],
+];
+const ZONE = Object.fromEntries(ZONES.map(([k, l, g]) => [k, { label: l, group: g }]));
+const STATUS = {
+  done: ["เสร็จ", "var(--good)"], late: ["ล่าช้า", "var(--danger)"], blocked: ["ติดปัญหา", "var(--warn)"],
+  doing: ["กำลังทำ", "var(--info)"], todo: ["ยังไม่เริ่ม", "var(--idle)"],
+};
+let tasks = [], expenses = [], groupTab = "all", statFilter = null, zoneFilter = null, editing = null;
+
+function token() {
+  const u = new URLSearchParams(location.search).get("k");
+  if (u) { try { localStorage.setItem(TOKEN_KEY, u); } catch (e) {} return u; }
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+function myName() { try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; } }
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const baht = n => Math.round(n).toLocaleString("th-TH");
+const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+const dayNum = d => Date.parse(d + "T00:00:00Z") / 86400000;
+const thDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" }) : "-";
+
+function planned(t, now = today()) {
+  if (!t.due_date) return null;
+  const s = dayNum(t.start_date || t.due_date), e = dayNum(t.due_date), n = dayNum(now);
+  if (n >= e) return 100;
+  if (n < s) return 0;
+  return Math.round(((n - s + 1) / (e - s + 1)) * 100);
+}
+function status(t) {
+  if (t.progress >= 100) return "done";
+  if (t.blocked) return "blocked";
+  const p = planned(t);
+  if (t.due_date && today() > t.due_date) return "late";
+  if (p != null && t.progress + 25 < p) return "late";
+  if (t.progress > 0) return "doing";
+  return "todo";
+}
+const spentOf = id => expenses.filter(e => e.task_id === id).reduce((s, e) => s + Number(e.amount), 0);
+function agg(list) {
+  let w = 0, wp = 0, wpl = 0;
+  for (const t of list) { const x = Number(t.weight); w += x; wp += x * t.progress; wpl += x * (planned(t) ?? 0); }
+  return { pct: w ? wp / w : 0, plan: w ? wpl / w : 0 };
+}
+const color = p => p >= 100 ? "var(--good)" : p > 0 ? "var(--info)" : "var(--idle)";
+const bar = (p, plan, c) => `<div class="pbar"><div class="fill" style="width:${Math.min(100, p)}%;background:${c || color(p)}"></div>${plan != null ? `<div class="plan" style="left:calc(${Math.min(100, plan)}% - 1px)"></div>` : ""}</div>`;
+
+function render() {
+  const all = agg(tasks);
+  const days = Math.round(dayNum(OPEN_DATE) - dayNum(today()));
+  const st = { done: 0, late: 0, blocked: 0, doing: 0, todo: 0 };
+  tasks.forEach(t => st[status(t)]++);
+  const budget = tasks.reduce((s, t) => s + Number(t.budget), 0);
+  const spent = expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const last = [...tasks.map(t => t.updated_at), ...expenses.map(e => e.created_at)].reduce((m, x) => x > m ? x : m, "");
+  document.getElementById("sub").textContent = `${tasks.length} งาน · อัปเดตล่าสุด ${last ? new Date(last).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-"}`;
+
+  const gap = all.pct - all.plan;
+  document.getElementById("hero").innerHTML = `<div class="hero">
+    <div><div class="pct">${all.pct.toFixed(1)}%</div><div class="lbl">ความคืบหน้ารวม (ถ่วงน้ำหนัก)</div></div>
+    <div class="cd"><div class="n">${days > 0 ? days : days === 0 ? "วันนี้" : "เลยมา " + -days}</div><div class="lbl">${days > 0 ? "วัน ก่อนเปิด 25 พ.ย. 2569" : "เปิด 25 พ.ย. 2569"}</div></div>
+    <div class="bar"><div class="fill" style="width:${all.pct}%"></div><div class="plan" style="left:calc(${all.plan}% - 1px)"></div></div>
+    <div class="hint">ตามแผนวันนี้ควรถึง ${all.plan.toFixed(1)}% · ${Math.abs(gap) < 1 ? "ตรงแผน" : gap > 0 ? `เร็วกว่าแผน ${gap.toFixed(1)}%` : `ช้ากว่าแผน ${(-gap).toFixed(1)}%`}</div></div>`;
+
+  const kp = [
+    [null, `${baht(spent)}`, `ใช้เงินไปแล้ว (บาท) จากงบ ${baht(budget)}`, spent > budget ? "var(--danger)" : "var(--accent)"],
+    [null, `${baht(budget - spent)}`, budget - spent < 0 ? "เกินงบ (บาท)" : "งบคงเหลือ (บาท)", budget - spent < 0 ? "var(--danger)" : "var(--good)"],
+    ["done", `${st.done}/${tasks.length}`, "งานเสร็จ", "var(--good)"],
+    ["late", st.late, "งานล่าช้า", "var(--danger)"],
+    ["blocked", st.blocked, "งานติดปัญหา", "var(--warn)"],
+    ["todo", st.todo, "ยังไม่เริ่ม", "var(--idle)"],
+  ];
+  document.getElementById("kpis").innerHTML = kp.map(([k, n, l, c]) =>
+    `<div class="kpi ${k ? "click" : ""} ${k && statFilter === k ? "active" : ""}" ${k ? `data-k="${k}"` : ""}><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`).join("");
+  document.querySelectorAll(".kpi.click").forEach(el => el.onclick = () => { statFilter = statFilter === el.dataset.k ? null : el.dataset.k; render(); });
+
+  document.getElementById("groups").innerHTML = GROUPS.map(([g, l]) => {
+    const list = tasks.filter(t => (ZONE[t.zone]?.group || "reno") === g);
+    if (!list.length) return "";
+    const a = agg(list), d = list.filter(t => t.progress >= 100).length;
+    return `<div class="grp-row" data-g="${g}"><div>${l} <span style="color:var(--muted);font-size:11px">${d}/${list.length}</span></div>${bar(a.pct, a.plan)}<div style="text-align:right;font-weight:700">${Math.round(a.pct)}%</div></div>`;
+  }).join("");
+  document.querySelectorAll(".grp-row").forEach(el => el.onclick = () => { groupTab = el.dataset.g; zoneFilter = null; render(); scrollToList(); });
+
+  const zrows = ZONES.map(([z, l]) => {
+    const list = tasks.filter(t => t.zone === z);
+    if (!list.length) return null;
+    const b = list.reduce((s, t) => s + Number(t.budget), 0), sp = list.reduce((s, t) => s + spentOf(t.id), 0);
+    return { z, l, b, sp, pct: agg(list).pct };
+  }).filter(r => r && (r.b > 0 || r.sp > 0));
+  document.getElementById("zones").innerHTML = `<table><tr><th>โซน</th><th>งบเป้า</th><th>ใช้จริง</th><th>คงเหลือ</th><th>% ใช้งบ</th><th>% งาน</th></tr>` +
+    zrows.map(r => `<tr class="zr" data-z="${r.z}"><td>${esc(r.l)}</td><td>${baht(r.b)}</td><td>${baht(r.sp)}</td>
+      <td class="${r.sp > r.b ? "over" : ""}">${baht(r.b - r.sp)}</td><td class="${r.sp > r.b ? "over" : ""}">${r.b ? Math.round(r.sp / r.b * 100) + "%" : "-"}</td><td>${Math.round(r.pct)}%</td></tr>`).join("") +
+    `<tr class="tot"><td>รวม</td><td>${baht(budget)}</td><td>${baht(spent)}</td><td class="${spent > budget ? "over" : ""}">${baht(budget - spent)}</td><td>${budget ? Math.round(spent / budget * 100) + "%" : "-"}</td><td>${Math.round(all.pct)}%</td></tr></table>` +
+    (Math.round(budget) !== CONTRACT_BUDGET ? `<div class="legend">หมายเหตุ: งบเป้ารวมตอนนี้ ${baht(budget)} ต่างจากตัวเลขในสัญญา ${baht(CONTRACT_BUDGET)} บาท</div>` : "");
+  document.querySelectorAll("tr.zr").forEach(el => el.onclick = () => { zoneFilter = el.dataset.z; groupTab = ZONE[zoneFilter].group; render(); scrollToList(); });
+
+  const tabs = [["all", "ทั้งหมด"], ...GROUPS];
+  document.getElementById("tabs").innerHTML = tabs.map(([k, l]) => `<button class="tab ${groupTab === k ? "on" : ""}" data-g="${k}">${l}</button>`).join("");
+  document.querySelectorAll("#tabs .tab").forEach(el => el.onclick = () => { groupTab = el.dataset.g; zoneFilter = null; render(); });
+  const stabs = [[null, "ทุกสถานะ"], ...Object.entries(STATUS).map(([k, [l]]) => [k, l])];
+  document.getElementById("stat").innerHTML = stabs.map(([k, l]) => `<button class="tab ${statFilter === k ? "on" : ""}" data-s="${k ?? ""}">${l}</button>`).join("");
+  document.querySelectorAll("#stat .tab").forEach(el => el.onclick = () => { statFilter = el.dataset.s || null; render(); });
+
+  let list = tasks.filter(t => (groupTab === "all" || (ZONE[t.zone]?.group || "reno") === groupTab) && (!zoneFilter || t.zone === zoneFilter) && (!statFilter || status(t) === statFilter));
+  const box = document.getElementById("list");
+  if (!list.length) { box.innerHTML = `<div class="loading">ไม่มีงานในตัวกรองนี้</div>`; return; }
+  let html = zoneFilter ? `<div class="toolbar"><button class="btn sm" id="clearZone">✕ ${esc(ZONE[zoneFilter].label)} — ดูทุกโซน</button></div>` : "";
+  for (const [z, l] of ZONES) {
+    const zl = list.filter(t => t.zone === z);
+    if (!zl.length) continue;
+    const a = agg(tasks.filter(t => t.zone === z));
+    const zb = tasks.filter(t => t.zone === z).reduce((s, t) => s + Number(t.budget), 0);
+    const zs = tasks.filter(t => t.zone === z).reduce((s, t) => s + spentOf(t.id), 0);
+    html += `<div class="zone-h">${esc(l)} <span>${Math.round(a.pct)}%${zb || zs ? ` · ใช้ ${baht(zs)} / ${baht(zb)}` : ""}</span></div>`;
+    html += zl.map(t => {
+      const s = status(t), [sl, sc] = STATUS[s], sp = spentOf(t.id), b = Number(t.budget);
+      return `<div class="task" data-id="${t.id}" style="border-left-color:${sc}">
+        <div class="t1"><span class="title">${esc(t.title)}</span><span class="tag" style="background:${sc}">${sl}</span></div>
+        <div class="meta"><span>📅 ${thDate(t.start_date)} – ${thDate(t.due_date)}</span>${t.owner ? `<span>👤 ${esc(t.owner)}</span>` : ""}${b || sp ? `<span class="${sp > b ? "over" : ""}">💰 ${baht(sp)} / ${baht(b)}</span>` : ""}</div>
+        <div class="pr">${bar(t.progress, planned(t), sc)}<span style="text-align:right">${t.progress}%</span></div>
+        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ""}</div>`;
+    }).join("");
+  }
+  box.innerHTML = html;
+  const cz = document.getElementById("clearZone"); if (cz) cz.onclick = () => { zoneFilter = null; render(); };
+  document.querySelectorAll(".task").forEach(el => el.onclick = () => openEdit(el.dataset.id));
+}
+function scrollToList() { document.getElementById("tabs").scrollIntoView({ behavior: "smooth", block: "start" }); }
+
+function openEdit(id, draft) {
+  const isNew = !id;
+  const t = isNew ? { zone: zoneFilter || (groupTab !== "all" ? ZONES.find(z => z[2] === groupTab)?.[0] : "other") || "other", title: "", owner: "", budget: 0, weight: 8, progress: 0,
+    start_date: today(), due_date: OPEN_DATE, blocked: false, note: "" } : { ...tasks.find(x => x.id === id), ...draft };
+  editing = { ...t };
+  const exps = isNew ? [] : expenses.filter(e => e.task_id === id);
+  document.getElementById("modal").innerHTML = `
+    <h3>${isNew ? "เพิ่มงานใหม่" : esc(t.title)}</h3>
+    <div class="sub" style="margin:0">${esc(ZONE[t.zone]?.label || t.zone)}${isNew ? "" : ` · ${STATUS[status(t)][0]}`}</div>
+    <label class="f">ความคืบหน้า</label>
+    <div class="pv" id="pv">${t.progress}%</div>
+    <input type="range" id="prog" min="0" max="100" step="5" value="${t.progress}" />
+    <div class="quick">${[0, 25, 50, 75, 100].map(v => `<button type="button" data-v="${v}">${v === 100 ? "เสร็จ" : v + "%"}</button>`).join("")}</div>
+    <label class="chk"><input type="checkbox" id="blocked" ${t.blocked ? "checked" : ""}/> ติดปัญหา / รอคนอื่น</label>
+    <label class="f">ชื่องาน</label><input type="text" id="title" value="${esc(t.title)}" />
+    <label class="f">โซน / สายงาน</label>
+    <select id="zone">${ZONES.map(([k, l]) => `<option value="${k}" ${t.zone === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label class="f">ผู้รับผิดชอบ (ช่าง / ทีมระบบ / พนักงาน)</label><input type="text" id="owner" value="${esc(t.owner)}" placeholder="เช่น ช่างสี, ทีม INNspire" />
+    <div class="two"><div><label class="f">เริ่ม</label><input type="date" id="start" value="${t.start_date || ""}" /></div>
+      <div><label class="f">กำหนดเสร็จ</label><input type="date" id="due" value="${t.due_date || ""}" /></div></div>
+    <div class="two"><div><label class="f">งบเป้า (บาท)</label><input type="number" id="budget" min="0" step="100" value="${Number(t.budget)}" /></div>
+      <div><label class="f">น้ำหนักงาน (แต้ม)</label><input type="number" id="weight" min="0" step="0.5" value="${Number(t.weight)}" /></div></div>
+    <label class="f">หมายเหตุ / อัปเดต</label><textarea id="note">${esc(t.note)}</textarea>
+    <label class="f">ชื่อคนอัปเดต</label><input type="text" id="who" value="${esc(myName())}" placeholder="เช่น บอสตอง" />
+    ${isNew ? "" : `<div class="exp"><h4>รายการจ่ายจริง · รวม ${baht(exps.reduce((s, e) => s + Number(e.amount), 0))} บาท</h4>
+      ${exps.map(e => `<div class="erow"><div>${thDate(e.paid_on)} · ${esc(e.vendor || "-")}${e.note ? `<br><span style="color:var(--muted);font-size:12px">${esc(e.note)}</span>` : ""}</div><b>${baht(e.amount)}</b><button class="x" data-e="${e.id}" title="ลบ">✕</button></div>`).join("") || `<div class="legend">ยังไม่มีรายการจ่าย</div>`}
+      <div class="eadd"><input type="number" id="eamt" placeholder="จำนวนเงิน" min="0" step="1" /><input type="date" id="edate" value="${today()}" />
+        <input type="text" id="evendor" placeholder="จ่ายให้ใคร / ร้าน" /><input type="text" id="enote" placeholder="รายละเอียด" /></div>
+      <button class="btn sm" id="eadd" style="margin-top:6px">+ บันทึกรายการจ่าย</button></div>`}
+    <div class="actions">${isNew ? "" : `<button class="btn danger" id="del" style="flex:none">ลบงาน</button>`}<button class="btn" id="cancel">ยกเลิก</button><button class="btn primary" id="save">บันทึก</button></div>`;
+  const setP = v => { editing.progress = v; document.getElementById("pv").textContent = v + "%"; document.getElementById("prog").value = v;
+    document.querySelectorAll(".quick button").forEach(b => b.classList.toggle("on", Number(b.dataset.v) === v)); };
+  document.getElementById("prog").oninput = e => setP(Number(e.target.value));
+  document.querySelectorAll(".quick button").forEach(b => b.onclick = () => setP(Number(b.dataset.v)));
+  setP(t.progress);
+  document.getElementById("cancel").onclick = close;
+  document.getElementById("save").onclick = () => save(isNew);
+  if (!isNew) {
+    document.getElementById("del").onclick = delTask;
+    document.getElementById("eadd").onclick = addExpense;
+    document.querySelectorAll(".erow .x").forEach(b => b.onclick = () => delExpense(b.dataset.e));
+  }
+  document.getElementById("bd").classList.add("show");
+}
+// unsaved edits in the form, so re-opening after an expense change doesn't lose them
+function formDraft() {
+  const v = id => document.getElementById(id).value;
+  return { title: v("title"), zone: v("zone"), owner: v("owner"), start_date: v("start") || null, due_date: v("due") || null,
+    budget: Number(v("budget") || 0), weight: Number(v("weight") || 0), progress: editing.progress,
+    blocked: document.getElementById("blocked").checked, note: v("note") };
+}
+function close() { document.getElementById("bd").classList.remove("show"); editing = null; }
+document.getElementById("bd").onclick = e => { if (e.target.id === "bd") close(); };
+document.getElementById("addBtn").onclick = () => openEdit(null);
+
+async function call(payload) {
+  const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ k: token(), ...payload }) });
+  const d = await res.json();
+  if (!d.success) throw new Error(d.error || "บันทึกไม่สำเร็จ");
+  return d;
+}
+function who() { const w = document.getElementById("who")?.value.trim() || myName(); try { localStorage.setItem(NAME_KEY, w); } catch (e) {} return w || null; }
+
+async function save(isNew) {
+  const btn = document.getElementById("save"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
+  const v = id => document.getElementById(id).value;
+  const payload = { action: isNew ? "add_task" : "update_task", id: editing.id, title: v("title").trim(), zone: v("zone"), owner: v("owner").trim() || null,
+    start_date: v("start") || null, due_date: v("due") || null, budget: Number(v("budget") || 0), weight: Number(v("weight") || 0),
+    progress: editing.progress, blocked: document.getElementById("blocked").checked, note: v("note").trim() || null, updated_by: who() };
+  try {
+    if (!payload.title) throw new Error("กรุณาใส่ชื่องาน");
+    const d = await call(payload);
+    tasks = isNew ? [...tasks, d.task] : tasks.map(t => t.id === d.task.id ? d.task : t);
+    close(); render();
+  } catch (e) { btn.disabled = false; btn.textContent = "บันทึก"; alert("บันทึกไม่สำเร็จ: " + e.message); }
+}
+async function delTask() {
+  if (!confirm(`ลบงาน "${editing.title}" และรายการจ่ายทั้งหมดของงานนี้?`)) return;
+  try { await call({ action: "delete_task", id: editing.id }); tasks = tasks.filter(t => t.id !== editing.id); expenses = expenses.filter(e => e.task_id !== editing.id); close(); render(); }
+  catch (e) { alert("ลบไม่สำเร็จ: " + e.message); }
+}
+async function addExpense() {
+  const amt = Number(document.getElementById("eamt").value);
+  if (!(amt > 0)) { alert("กรุณาใส่จำนวนเงิน"); return; }
+  const btn = document.getElementById("eadd"); btn.disabled = true;
+  try {
+    const d = await call({ action: "add_expense", task_id: editing.id, amount: amt, paid_on: document.getElementById("edate").value || null,
+      vendor: document.getElementById("evendor").value.trim() || null, note: document.getElementById("enote").value.trim() || null, created_by: who() });
+    const draft = formDraft(); expenses = [d.expense, ...expenses]; render(); openEdit(editing.id, draft);
+  } catch (e) { btn.disabled = false; alert("บันทึกไม่สำเร็จ: " + e.message); }
+}
+async function delExpense(id) {
+  const e = expenses.find(x => x.id === id);
+  if (!confirm(`ลบรายการจ่าย ${baht(e.amount)} บาท?`)) return;
+  try { await call({ action: "delete_expense", id }); const draft = formDraft(); expenses = expenses.filter(x => x.id !== id); render(); openEdit(editing.id, draft); }
+  catch (err) { alert("ลบไม่สำเร็จ: " + err.message); }
+}
+
+async function load() {
+  const k = token(), errBox = document.getElementById("err");
+  if (!k) { errBox.innerHTML = `<div class="err">ลิงก์ไม่ถูกต้อง — กรุณาเปิดจากลิงก์ที่ได้รับ (มี ?k=…)</div>`; document.getElementById("list").innerHTML = ""; return; }
+  try {
+    const res = await fetch(`${API}?k=${encodeURIComponent(k)}`);
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error === "unauthorized" ? "ลิงก์หมดสิทธิ์หรือไม่ถูกต้อง" : d.error);
+    tasks = d.tasks; expenses = d.expenses; errBox.innerHTML = ""; render();
+  } catch (e) { errBox.innerHTML = `<div class="err">โหลดข้อมูลไม่ได้: ${esc(e.message)}</div>`; document.getElementById("list").innerHTML = ""; }
+}
+load();
+</script>
+</body>
+</html>
