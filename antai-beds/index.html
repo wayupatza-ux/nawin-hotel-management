@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>เช็คเตียง Antai Pattaya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1c1c; --muted: #6b6b6b; --line: #e0e0e0;
+    --accent: #16302a; --accent-soft: #eef0ec; --bg: #f4f3ee; --card: #ffffff;
+    --danger: #b23a3a; --warn: #b7791f; --good: #256b3a;
+    --twin: #2b6cb0; --double: #256b3a; --triple: #805ad5; --family: #c05621; --spa: #718096;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Sarabun", "Noto Sans Thai", sans-serif; color: var(--ink); background: var(--bg); margin: 0; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .kpi .n { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+  .kpi.active { outline: 2px solid var(--accent); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+  .tab { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 20px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  .tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .room { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; }
+  .room:hover { border-color: #c9c9c9; }
+  .room .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .room .no { font-size: 18px; font-weight: 700; }
+  .room .rtype { font-size: 11px; color: var(--muted); }
+  .room .beds { font-size: 12px; margin: 6px 0; line-height: 1.45; min-height: 34px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; color: #fff; }
+  .flag { font-size: 11px; color: var(--danger); margin-top: 4px; }
+  .note { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .loading { text-align: center; color: var(--muted); padding: 50px 0; }
+  .err { background: #fdecec; color: var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
+  .backdrop.show { display: flex; }
+  .modal { background: var(--card); width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 16px; }
+  @media (min-width: 600px) { .backdrop { align-items: center; } .modal { border-radius: 14px; } }
+  .modal h3 { margin: 0 0 2px; font-size: 20px; color: var(--accent); }
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .grp { grid-column: span 2; font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+  .step { border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+  .step .lbl { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .step .ctl { display: flex; align-items: center; justify-content: space-between; }
+  .step button { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); font-size: 20px; cursor: pointer; }
+  .step .v { font-size: 20px; font-weight: 700; min-width: 28px; text-align: center; }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 3px; }
+  select, input[type=text], textarea { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+  textarea { min-height: 60px; }
+  .preview { margin-top: 10px; font-size: 13px; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; font: inherit; font-size: 15px; padding: 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn:disabled { opacity: .6; }
+  .legend { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>เช็คเตียง — Antai Pattaya</h1>
+  <div class="sub" id="sub">กำลังโหลด…</div>
+  <div id="err"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="panel">
+    <h2>ยอดรวมฐานเตียง / ที่นอน (ทั้งตึก รวมสต็อกชั้น 2)</h2>
+    <div id="totals"></div>
+    <div class="legend">ขนาดเป็นความกว้าง (ฟุต) ความยาวมาตรฐาน 6.5 ฟุต · ที่นอน 5 หรือ 6 ฟุตวางบนฐาน 3.5 ฟุต 2 อันได้</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"><div class="loading">กำลังโหลด…</div></div>
+</div>
+
+<div class="backdrop" id="bd">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const API = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-antai-beds";
+const TOKEN_KEY = "antai_beds_token";
+const NAME_KEY = "antai_beds_name";
+const SIZES = [["35", "3.5"], ["5", "5"], ["6", "6"]];
+const TYPE_COLORS = { Twin: "var(--twin)", Double: "var(--double)", Triple: "var(--triple)", Family: "var(--family)", Single: "var(--warn)" };
+let rooms = [], floorTab = "all", kpiFilter = null, editing = null;
+
+function token() {
+  const u = new URLSearchParams(location.search).get("k");
+  if (u) { try { localStorage.setItem(TOKEN_KEY, u); } catch (e) {} return u; }
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function analyse(r) {
+  const m35 = r.mat_35, m5 = r.mat_5, m6 = r.mat_6, big = m5 + m6, mats = m35 + big;
+  const baseW = 3.5 * r.base_35 + 5 * r.base_5 + 6 * r.base_6;
+  const matW = 3.5 * m35 + 5 * m5 + 6 * m6;
+  const flags = [];
+  if (r.room_type === "Stock") return { sell: null, flags };
+  if (!r.checked) return { sell: null, flags: ["ยังไม่ได้เช็ค"] };
+  if (mats === 0) flags.push("ไม่มีที่นอน");
+  if (matW > baseW + 0.01) flags.push("ฐานไม่พอรองที่นอน");
+  else if (baseW - matW >= 3.5) flags.push("มีฐานเปล่า ขาดที่นอน");
+  if (r.condition && r.condition !== "ดี") flags.push(r.condition);
+  if (r.room_type === "Spa") return { sell: null, flags };
+  let sell = "อื่นๆ";
+  if (mats === 1) sell = big ? "Double" : "Single";
+  else if (mats === 2 && big === 0) sell = "Twin";
+  else if (mats === 2 && big === 1) sell = "Triple";
+  else if (mats === 3 && big === 0) sell = "Triple";
+  else if (big >= 2 || mats >= 3) sell = "Family";
+  return { sell, flags };
+}
+
+function bedText(r) {
+  const parts = [];
+  for (const [k, l] of SIZES) if (r["base_" + k]) parts.push(`ฐาน ${l}′ ×${r["base_" + k]}`);
+  const p2 = [];
+  for (const [k, l] of SIZES) if (r["mat_" + k]) p2.push(`ที่นอน ${l}′ ×${r["mat_" + k]}`);
+  return (parts.join(" · ") || "ไม่มีฐาน") + "<br>" + (p2.join(" · ") || "ไม่มีที่นอน");
+}
+
+function render() {
+  const sellable = rooms.filter(r => !["Spa", "Stock"].includes(r.room_type));
+  const all = rooms.filter(r => r.room_type !== "Stock");
+  const counts = { Twin: 0, Double: 0, Triple: 0, Family: 0, Single: 0 };
+  let fix = 0, unchecked = 0;
+  for (const r of all) {
+    const a = analyse(r);
+    if (!r.checked) { unchecked++; continue; }
+    if (a.sell && counts[a.sell] !== undefined) counts[a.sell]++;
+    if (a.flags.length) fix++;
+  }
+  const checked = all.filter(r => r.checked).length;
+  const last = rooms.reduce((m, r) => r.updated_at > m ? r.updated_at : m, "");
+  document.getElementById("sub").textContent =
+    `เช็คแล้ว ${checked}/${all.length} ห้อง · ห้องพักขายได้ ${sellable.length} ห้อง · อัปเดตล่าสุด ${last ? new Date(last).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-"}`;
+
+  const kp = [
+    ["Twin", counts.Twin, "Twin (เตียงเดี่ยว 2)", TYPE_COLORS.Twin],
+    ["Double", counts.Double, "Double (เตียงใหญ่ 1)", TYPE_COLORS.Double],
+    ["Triple", counts.Triple, "Triple (3 คน)", TYPE_COLORS.Triple],
+    ["Family", counts.Family, "Family (4 คน+)", TYPE_COLORS.Family],
+    ["fix", fix, "ต้องจัด / แก้", "var(--danger)"],
+    ["unchecked", unchecked, "ยังไม่ได้เช็ค", "var(--muted)"],
+  ];
+  document.getElementById("kpis").innerHTML = kp.map(([k, n, l, c]) =>
+    `<div class="kpi ${kpiFilter === k ? "active" : ""}" data-k="${k}"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`).join("");
+  document.querySelectorAll(".kpi").forEach(el => el.onclick = () => { kpiFilter = kpiFilter === el.dataset.k ? null : el.dataset.k; render(); });
+
+  const sum = (pref, filter) => SIZES.map(([k]) => rooms.filter(filter).reduce((s, r) => s + r[pref + k], 0));
+  const inRooms = r => r.room_type !== "Stock", inStock = r => r.room_type === "Stock";
+  const rowsT = [
+    ["ฐานเตียง — ในห้อง", sum("base_", inRooms)], ["ฐานเตียง — สต็อกชั้น 2", sum("base_", inStock)],
+    ["ที่นอน — ในห้อง", sum("mat_", inRooms)], ["ที่นอน — สต็อกชั้น 2", sum("mat_", inStock)],
+  ];
+  document.getElementById("totals").innerHTML = `<table><tr><th></th><th>3.5 ฟุต</th><th>5 ฟุต</th><th>6 ฟุต</th></tr>` +
+    rowsT.map(([l, v]) => `<tr><td>${l}</td>${v.map(x => `<td>${x}</td>`).join("")}</tr>`).join("") + `</table>`;
+
+  const floors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+  const tabs = [["all", "ทุกชั้น"], ...floors.map(f => [String(f), f === 2 ? "ชั้น 2 (สต็อก)" : "ชั้น " + f])];
+  document.getElementById("tabs").innerHTML = tabs.map(([k, l]) => `<button class="tab ${floorTab === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("");
+  document.querySelectorAll(".tab").forEach(el => el.onclick = () => { floorTab = el.dataset.f; render(); });
+
+  let list = rooms.filter(r => floorTab === "all" || String(r.floor) === floorTab);
+  if (kpiFilter) list = list.filter(r => {
+    const a = analyse(r);
+    if (kpiFilter === "fix") return r.checked && a.flags.length && r.room_type !== "Stock";
+    if (kpiFilter === "unchecked") return !r.checked;
+    return r.checked && a.sell === kpiFilter;
+  });
+  const grid = document.getElementById("grid");
+  if (!list.length) { grid.innerHTML = `<div class="loading">ไม่มีห้องในตัวกรองนี้</div>`; return; }
+  grid.innerHTML = list.map(r => {
+    const a = analyse(r);
+    const color = r.room_type === "Stock" ? "var(--accent)" : !r.checked ? "var(--line)" : a.flags.length ? "var(--danger)" : (TYPE_COLORS[a.sell] || "var(--spa)");
+    const label = r.room_type === "Stock" ? "สต็อก" : r.room_type === "Spa" ? "สปา" : (a.sell || "");
+    const tub = r.has_bathtub === false ? " · ไม่มีอ่าง" : r.has_bathtub === true ? " · มีอ่าง" : "";
+    return `<div class="room" data-r="${esc(r.room_no)}" style="border-left-color:${color}">
+      <div class="top"><span class="no">${r.room_type === "Stock" ? "ชั้น 2" : esc(r.room_no)}</span>${label ? `<span class="tag" style="background:${color}">${label}</span>` : ""}</div>
+      <div class="rtype">${esc(r.room_type)}${tub}</div>
+      <div class="beds">${r.checked ? bedText(r) : "<i>ยังไม่ได้เช็ค — แตะเพื่อกรอก</i>"}</div>
+      ${a.flags.filter(f => f !== "ยังไม่ได้เช็ค").map(f => `<div class="flag">⚠ ${esc(f)}</div>`).join("")}
+      ${r.note && r.note !== "ยังไม่ได้เช็ค" ? `<div class="note">${esc(r.note)}</div>` : ""}
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".room").forEach(el => el.onclick = () => openEdit(el.dataset.r));
+}
+
+function openEdit(no) {
+  const r = rooms.find(x => x.room_no === no);
+  editing = { ...r };
+  let name = ""; try { name = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+  const step = (f, l) => `<div class="step"><div class="lbl">${l}</div><div class="ctl">
+    <button type="button" data-f="${f}" data-d="-1">−</button><span class="v" id="v_${f}">${editing[f]}</span><button type="button" data-f="${f}" data-d="1">+</button></div></div>`;
+  document.getElementById("modal").innerHTML = `
+    <h3>${r.room_type === "Stock" ? "สต็อกชั้น 2" : "ห้อง " + esc(r.room_no)}</h3>
+    <div class="sub" style="margin:0">${esc(r.room_type)}</div>
+    <div class="steps">
+      <div class="grp">ฐานเตียง (นับจำนวนฐาน)</div>
+      ${step("base_35", "ฐาน 3.5 ฟุต")}${step("base_5", "ฐาน 5 ฟุต")}${step("base_6", "ฐาน 6 ฟุต")}<div></div>
+      <div class="grp">ที่นอน (นับจำนวนหลัง)</div>
+      ${step("mat_35", "ที่นอน 3.5 ฟุต")}${step("mat_5", "ที่นอน 5 ฟุต")}${step("mat_6", "ที่นอน 6 ฟุต")}<div></div>
+    </div>
+    ${["Spa", "Stock"].includes(r.room_type) ? "" : `<label class="f">อ่างอาบน้ำ</label>
+    <select id="tub"><option value="">ไม่ระบุ</option><option value="1" ${r.has_bathtub === true ? "selected" : ""}>มีอ่าง</option><option value="0" ${r.has_bathtub === false ? "selected" : ""}>ไม่มีอ่าง</option></select>`}
+    <label class="f">สภาพเตียง / ที่นอน</label>
+    <select id="cond"><option value="">ไม่ระบุ</option>${["ดี", "ต้องซ่อม", "ต้องเปลี่ยน"].map(c => `<option ${r.condition === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+    <label class="f">หมายเหตุ</label>
+    <textarea id="note">${esc(r.note && r.note !== "ยังไม่ได้เช็ค" ? r.note : "")}</textarea>
+    <label class="f">ชื่อคนเช็ค</label>
+    <input type="text" id="who" value="${esc(name)}" placeholder="เช่น ปิ่น" />
+    <div class="preview" id="prev"></div>
+    <div class="actions"><button class="btn" id="cancel">ยกเลิก</button><button class="btn primary" id="save">บันทึก</button></div>`;
+  document.querySelectorAll(".step button").forEach(b => b.onclick = () => {
+    const f = b.dataset.f; editing[f] = Math.max(0, Math.min(50, editing[f] + Number(b.dataset.d)));
+    document.getElementById("v_" + f).textContent = editing[f]; preview();
+  });
+  document.getElementById("cancel").onclick = close;
+  document.getElementById("save").onclick = save;
+  document.getElementById("bd").classList.add("show");
+  preview();
+}
+function preview() {
+  const a = analyse({ ...editing, checked: true, condition: null });
+  document.getElementById("prev").innerHTML = (a.sell ? `ขายเป็น: <b>${a.sell}</b>` : "") +
+    (a.flags.length ? `<div class="flag">⚠ ${a.flags.join(" · ")}</div>` : "");
+}
+function close() { document.getElementById("bd").classList.remove("show"); editing = null; }
+document.getElementById("bd").onclick = e => { if (e.target.id === "bd") close(); };
+
+async function save() {
+  const btn = document.getElementById("save"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
+  const who = document.getElementById("who").value.trim();
+  try { localStorage.setItem(NAME_KEY, who); } catch (e) {}
+  const tubEl = document.getElementById("tub");
+  const payload = { k: token(), room_no: editing.room_no, condition: document.getElementById("cond").value || null,
+    note: document.getElementById("note").value.trim() || null, updated_by: who || null };
+  for (const p of ["base_", "mat_"]) for (const [k] of SIZES) payload[p + k] = editing[p + k];
+  if (tubEl) payload.has_bathtub = tubEl.value === "" ? null : tubEl.value === "1";
+  try {
+    const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || "บันทึกไม่สำเร็จ");
+    rooms = rooms.map(r => r.room_no === d.room.room_no ? d.room : r);
+    close(); render();
+  } catch (e) { btn.disabled = false; btn.textContent = "บันทึก"; alert("บันทึกไม่สำเร็จ: " + e.message); }
+}
+
+async function load() {
+  const k = token();
+  const errBox = document.getElementById("err");
+  if (!k) { errBox.innerHTML = `<div class="err">ลิงก์ไม่ถูกต้อง — กรุณาเปิดจากลิงก์ที่ได้รับ (มี ?k=…)</div>`; document.getElementById("grid").innerHTML = ""; return; }
+  try {
+    const res = await fetch(`${API}?k=${encodeURIComponent(k)}`);
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error === "unauthorized" ? "ลิงก์หมดสิทธิ์หรือไม่ถูกต้อง" : d.error);
+    rooms = d.rooms; errBox.innerHTML = ""; render();
+  } catch (e) { errBox.innerHTML = `<div class="err">โหลดข้อมูลไม่ได้: ${esc(e.message)}</div>`; document.getElementById("grid").innerHTML = ""; }
+}
+load();
+</script>
+</body>
+</html>
