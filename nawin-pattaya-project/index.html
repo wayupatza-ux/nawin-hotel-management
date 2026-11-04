@@ -132,7 +132,7 @@ const GROUPS = [
   ["hr", "รับสมัครพนักงาน"], ["admin", "เอกสาร / สาธารณูปโภค"], ["preopen", "เตรียมเปิด"],
 ];
 const ZONES = [
-  ["std", "ห้อง Standard (44)", "reno"], ["dlx", "ห้อง Deluxe (5)", "reno"], ["mvip", "ห้อง Mini VIP (3)", "reno"],
+  ["paint", "ลอกวอลเปเปอร์ / ทาสีในห้อง (แยกชั้น)", "reno"], ["std", "ห้อง Standard (44)", "reno"], ["dlx", "ห้อง Deluxe (5)", "reno"], ["mvip", "ห้อง Mini VIP (3)", "reno"],
   ["vip", "ห้อง VIP Family (4)", "reno"], ["lobby", "ล็อบบี้ชั้น 1", "reno"], ["corridor", "ทางเดิน / บันได ชั้น 3–8", "reno"],
   ["rest", "ห้องอาหารชั้น 2", "reno"], ["spa", "สปา 303–308", "reno"], ["ac", "ระบบแอร์", "reno"], ["pool", "สระว่ายน้ำ", "reno"],
   ["ext", "ทาสีภายนอกอาคาร", "reno"], ["fridge", "ตู้เย็น", "reno"], ["sign", "ป้ายและแบรนด์", "reno"],
@@ -255,7 +255,7 @@ function render() {
       const s = status(t), [sl, sc] = STATUS[s], sp = spentOf(t.id), b = Number(t.budget);
       return `<div class="task" data-id="${t.id}" style="border-left-color:${sc}">
         <div class="t1"><span class="title">${esc(t.title)}</span><span class="tag" style="background:${sc}">${sl}</span></div>
-        <div class="meta"><span>📅 ${thDate(t.start_date)} – ${thDate(t.due_date)}</span>${t.owner ? `<span>👤 ${esc(t.owner)}</span>` : ""}${b || sp ? `<span class="${sp > b ? "over" : ""}">💰 ${baht(sp)} / ${baht(b)}</span>` : ""}</div>
+        <div class="meta">${t.zone === "paint" ? `<span>🧑‍🔧 ${t.owner ? esc(t.owner) : "ยังไม่ระบุผู้รับเหมา"}</span>` : ""}<span>📅 ${thDate(t.start_date)} – ${thDate(t.due_date)}</span>${t.owner && t.zone !== "paint" ? `<span>👤 ${esc(t.owner)}</span>` : ""}${b || sp ? `<span class="${sp > b ? "over" : ""}">💰 ${baht(sp)} / ${baht(b)}</span>` : ""}</div>
         <div class="pr">${bar(t.progress, planned(t), sc)}<span style="text-align:right">${t.progress}%</span></div>
         ${t.note ? `<div class="note">${esc(t.note)}</div>` : ""}</div>`;
     }).join("");
