@@ -63,7 +63,10 @@
   .seg button.on.ok { background: var(--good); color: #fff; border-color: var(--good); }
   .seg button.on.issue { background: var(--danger); color: #fff; border-color: var(--danger); }
   .seg button.on.na { background: var(--muted); color: #fff; border-color: var(--muted); }
-  .item input { width: 100%; margin-top: 6px; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid #e6a6a6; border-radius: 8px; }
+  .item textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+  .item textarea.req { border-color: #e6a6a6; background: #fff; }
+  .item .nl { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .item.issue .nl { color: #b42318; font-weight: 600; }
   label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 3px; }
   input[type=text] { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
   .actions { position: sticky; bottom: -16px; background: var(--card); display: flex; gap: 8px; padding: 12px 0 4px; margin-top: 8px; }
@@ -208,7 +211,7 @@ function openEdit(no) {
       const prev = c[i.key];
       return `<div class="item" id="it_${i.key}"><div class="row"><div class="name">${esc(i.label)}<div class="hint">${esc(i.key === "bed" ? i.hint + " (" + bedText(r) + ")" : i.hint)}</div></div>
         <div class="seg">${[["ok", "✓ ดี"], ["issue", "✗ เสีย"], ["na", "ไม่มี"]].map(([s, l]) => `<button type="button" class="${s}" data-k="${i.key}" data-s="${s}">${l}</button>`).join("")}</div></div>
-        <input type="text" id="n_${i.key}" placeholder="เป็นอะไร? เช่น แอร์ไม่เย็น / ยาแนวดำ" style="display:none" />
+        <div class="nwrap" id="w_${i.key}" style="display:none"><label class="nl" id="l_${i.key}"></label><textarea rows="2" id="n_${i.key}"></textarea></div>
         ${prev ? `<div class="meta">ล่าสุด ${fmt(prev.checked_at)}${prev.checked_by ? " · " + esc(prev.checked_by) : ""}</div>` : ""}</div>`;
     }).join("");
   }).join("");
@@ -223,7 +226,7 @@ function openEdit(no) {
     it.status = it.status === b.dataset.s ? null : b.dataset.s; paint(b.dataset.k);
     if (it.status === "issue") document.getElementById("n_" + b.dataset.k).focus();
   });
-  document.querySelectorAll(".item input").forEach(inp => inp.oninput = () => { editing.items[inp.id.slice(2)].note = inp.value; });
+  document.querySelectorAll(".item textarea").forEach(inp => inp.oninput = () => { editing.items[inp.id.slice(2)].note = inp.value; });
   document.getElementById("cancel").onclick = close;
   document.getElementById("save").onclick = save;
   document.getElementById("bd").classList.add("show");
@@ -234,7 +237,11 @@ function paint(k) {
   box.className = "item " + (it.status || "");
   box.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.s === it.status));
   const inp = document.getElementById("n_" + k);
-  inp.style.display = it.status === "issue" ? "" : "none"; inp.value = it.note || "";
+  const w = document.getElementById("w_" + k), l = document.getElementById("l_" + k);
+  w.style.display = it.status ? "" : "none"; inp.value = it.note || "";
+  inp.className = it.status === "issue" ? "req" : "";
+  l.textContent = it.status === "issue" ? "หมายเหตุ (ต้องใส่): เสียเพราะอะไร / ต้องซ่อม-ซื้ออะไร" : "หมายเหตุ (ถ้ามี)";
+  inp.placeholder = it.status === "issue" ? "เช่น แอร์ไม่เย็น น้ำยาหมด · ยาแนวดำ ต้องขูดใหม่ · รีโมททีวีหาย" : "เช่น ใช้ได้แต่เสียงดัง";
 }
 function close() { document.getElementById("bd").classList.remove("show"); editing = null; }
 document.getElementById("bd").onclick = e => { if (e.target.id === "bd") close(); };
