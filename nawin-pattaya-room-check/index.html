@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>เช็คความพร้อมห้อง The Nawin Pattaya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1c1c; --muted: #6b6b6b; --line: #e0e0e0;
+    --accent: #16302a; --accent-soft: #eef0ec; --bg: #f4f3ee; --card: #ffffff;
+    --danger: #b23a3a; --danger-soft: #fdecec; --warn: #b7791f; --good: #256b3a; --good-soft: #e6f2e9;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Sarabun", "Noto Sans Thai", sans-serif; color: var(--ink); background: var(--bg); margin: 0; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; color: var(--accent); margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .kpi .n { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+  .kpi.active { outline: 2px solid var(--accent); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); display: flex; justify-content: space-between; cursor: pointer; }
+  .issue-row { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .issue-row:last-child { border-bottom: 0; }
+  .issue-row b { color: var(--danger); }
+  .chip { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 1px 8px; margin: 2px 3px 0 0; cursor: pointer; background: var(--card); }
+  .chip:hover { border-color: var(--danger); }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+  .tab { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 20px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  .tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .room { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; }
+  .room .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .room .no { font-size: 18px; font-weight: 700; }
+  .room .rtype { font-size: 11px; color: var(--muted); }
+  .bar { height: 6px; background: var(--accent-soft); border-radius: 3px; margin: 8px 0 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--good); }
+  .room .st { font-size: 12px; }
+  .room .iss { font-size: 11px; color: var(--danger); margin-top: 3px; line-height: 1.4; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; color: #fff; }
+  .loading { text-align: center; color: var(--muted); padding: 50px 0; }
+  .err { background: var(--danger-soft); color: var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
+  .backdrop.show { display: flex; }
+  .modal { background: var(--card); width: 100%; max-width: 520px; max-height: 94vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 16px; }
+  @media (min-width: 600px) { .backdrop { align-items: center; } .modal { border-radius: 14px; } }
+  .modal h3 { margin: 0 0 2px; font-size: 20px; color: var(--accent); }
+  .grp { font-size: 13px; color: var(--accent); font-weight: 700; margin: 14px 0 4px; }
+  .item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+  .item.ok { background: var(--good-soft); border-color: #b9dcc3; }
+  .item.issue { background: var(--danger-soft); border-color: #f0bcbc; }
+  .item.na { background: #f3f3f3; }
+  .item .row { display: flex; align-items: center; gap: 8px; }
+  .item .name { flex: 1; font-size: 15px; }
+  .item .hint { font-size: 11px; color: var(--muted); }
+  .item .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .seg { display: flex; gap: 4px; flex: none; }
+  .seg button { min-width: 50px; height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 6px; }
+  .seg button.on.ok { background: var(--good); color: #fff; border-color: var(--good); }
+  .seg button.on.issue { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .seg button.on.na { background: var(--muted); color: #fff; border-color: var(--muted); }
+  .item input { width: 100%; margin-top: 6px; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid #e6a6a6; border-radius: 8px; }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 3px; }
+  input[type=text] { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+  .actions { position: sticky; bottom: -16px; background: var(--card); display: flex; gap: 8px; padding: 12px 0 4px; margin-top: 8px; }
+  .btn { flex: 1; font: inherit; font-size: 15px; padding: 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn:disabled { opacity: .6; }
+  .legend { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>เช็คความพร้อมห้อง — The Nawin Pattaya</h1>
+  <div class="sub" id="sub">กำลังโหลด…</div>
+  <div id="err"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="panel" id="issuesPanel" style="display:none">
+    <h2 id="issuesHead"><span>สรุปปัญหาตามรายการ (ใช้สั่งซ่อม / สั่งของ)</span><span id="issuesToggle">ซ่อน</span></h2>
+    <div id="issues"></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"><div class="loading">กำลังโหลด…</div></div>
+  <div class="legend">✓ ดี · ✗ เสีย/มีปัญหา (ต้องเขียนว่าเป็นอะไร) · ไม่มี = ห้องนี้ไม่มีของชิ้นนี้ · ห้องจะ "พร้อมขาย" เมื่อตรวจครบทุกข้อและไม่มี ❌</div>
+</div>
+
+<div class="backdrop" id="bd"><div class="modal" id="modal"></div></div>
+
+<script>
+const API = "https://hkglavlxhdtoawjfptah.supabase.co/functions/v1/public-nawin-pattaya-room-check";
+const TOKEN_KEY = "nawin_pattaya_beds_token";   // same staff link/token as the bed board
+const NAME_KEY = "nawin_pattaya_beds_name";
+const GROUPS = [
+  ["ห้องนอน", [
+    ["bed", "ที่นอน / ฐานเตียง", "ไม่ยุบ ไม่มีคราบ ตรงกับบอร์ดเตียง"],
+    ["ac", "แอร์ + รีโมท", "เย็น ไม่มีน้ำหยด ไม่มีเสียงดัง"],
+    ["tv", "ทีวี + รีโมท", "เปิดติด มีช่อง/แอปใช้ได้"],
+    ["fridge", "ตู้เย็น", "เย็น สะอาด ไม่มีกลิ่น"],
+    ["furniture", "โต๊ะ / เก้าอี้", "ไม่โยก สีเรียบร้อย"],
+    ["curtain", "ผ้าม่าน", "สะอาด รางเลื่อนได้ ปิดมิด"],
+    ["light", "หลอดไฟ", "ติดทุกดวง"],
+    ["lamp", "โคมไฟหัวเตียง", "ติด สวิตช์ใช้ได้"],
+    ["socket", "ปลั๊กไฟ", "มีไฟทุกจุด หน้ากากไม่แตก"],
+    ["floor", "พื้นห้อง", "ไม่แตก ไม่ร่อน สะอาด"],
+    ["door", "ประตู / ลูกบิด / กุญแจ", "ล็อกได้ กลอนใช้ได้"],
+    ["wall", "ผนัง / สี / ฝ้า", "ไม่มีรอยด่าง ไม่มีคราบน้ำ"],
+    ["clean_room", "ความสะอาดห้องนอน", "ไม่มีฝุ่น ไม่มีกลิ่น"],
+  ]],
+  ["ห้องน้ำ", [
+    ["heater", "เครื่องทำน้ำอุ่น", "ร้อน ไม่ตัด เบรกเกอร์ใช้ได้"],
+    ["shower", "ฝักบัว / ก๊อกยืนอาบ", "น้ำแรง ไม่รั่ว"],
+    ["toilet", "ชักโครก", "กดน้ำได้ ไม่รั่ว ฝารองนั่งแน่น"],
+    ["bidet", "สายชำระ", "ไม่รั่ว มีที่แขวน"],
+    ["sink", "อ่างล้างหน้า / ก๊อก", "ไม่รั่ว น้ำลงดี"],
+    ["drain", "ท่อระบายน้ำพื้น", "น้ำไม่ขัง ไม่มีกลิ่น"],
+    ["grout", "ยาแนว / ซิลิโคน", "ไม่ดำ ไม่หลุด"],
+    ["bathtub", "อ่างอาบน้ำ", "ไม่รั่ว สะอาด จุกปิดใช้ได้", "tub"],
+    ["clean_bath", "ความสะอาดห้องน้ำ", "ไม่มีคราบ ไม่มีกลิ่น"],
+  ]],
+];
+const ITEMS = GROUPS.flatMap(([g, list]) => list.map(([key, label, hint, only]) => ({ key, label, hint, only, group: g })));
+const LABEL = Object.fromEntries(ITEMS.map(i => [i.key, i.label]));
+const STATE = { ready: ["พร้อมขาย", "var(--good)"], issue: ["มีปัญหา", "var(--danger)"], partial: ["ตรวจยังไม่ครบ", "var(--warn)"], none: ["ยังไม่ตรวจ", "var(--muted)"] };
+let rooms = [], checks = {}, floorTab = "all", kpiFilter = null, editing = null, showIssues = true;
+
+function token() {
+  const u = new URLSearchParams(location.search).get("k");
+  if (u) { try { localStorage.setItem(TOKEN_KEY, u); } catch (e) {} return u; }
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = t => t ? new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+
+function itemsFor(r) { return ITEMS.filter(i => i.only !== "tub" || r.has_bathtub !== false); }
+function summary(r) {
+  const list = itemsFor(r), c = checks[r.room_no] || {};
+  let done = 0; const issues = [];
+  for (const i of list) { const x = c[i.key]; if (!x) continue; done++; if (x.status === "issue") issues.push(i); }
+  const state = issues.length ? "issue" : done === 0 ? "none" : done < list.length ? "partial" : "ready";
+  return { total: list.length, done, issues, state };
+}
+
+function render() {
+  const S = rooms.map(r => [r, summary(r)]);
+  const cnt = { ready: 0, issue: 0, partial: 0, none: 0 };
+  S.forEach(([, s]) => cnt[s.state]++);
+  const all = Object.values(checks).flatMap(o => Object.values(o));
+  const last = all.reduce((m, x) => x.checked_at > m ? x.checked_at : m, "");
+  document.getElementById("sub").textContent = `ห้องพักขายได้ ${rooms.length} ห้อง · พร้อมขาย ${cnt.ready} ห้อง · อัปเดตล่าสุด ${last ? fmt(last) : "-"}`;
+
+  document.getElementById("kpis").innerHTML = Object.entries(STATE).map(([k, [l, c]]) =>
+    `<div class="kpi ${kpiFilter === k ? "active" : ""}" data-k="${k}"><div class="n" style="color:${c}">${cnt[k]}</div><div class="l">${l}</div></div>`).join("");
+  document.querySelectorAll(".kpi").forEach(el => el.onclick = () => { kpiFilter = kpiFilter === el.dataset.k ? null : el.dataset.k; render(); });
+
+  // issues grouped by item
+  const byItem = {};
+  for (const [r, s] of S) for (const i of s.issues) (byItem[i.key] ||= []).push(r.room_no);
+  const keys = ITEMS.map(i => i.key).filter(k => byItem[k]);
+  const ip = document.getElementById("issuesPanel");
+  ip.style.display = keys.length ? "" : "none";
+  document.getElementById("issuesToggle").textContent = showIssues ? "ซ่อน" : "แสดง";
+  document.getElementById("issues").style.display = showIssues ? "" : "none";
+  document.getElementById("issues").innerHTML = keys.map(k => `<div class="issue-row"><b>${esc(LABEL[k])}</b> — ${byItem[k].length} ห้อง<br>${
+    byItem[k].map(no => `<span class="chip" data-r="${esc(no)}" title="${esc(checks[no][k].note)}">${esc(no)}: ${esc(checks[no][k].note)}</span>`).join("")}</div>`).join("");
+  document.querySelectorAll(".chip").forEach(el => el.onclick = () => openEdit(el.dataset.r));
+
+  const floors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+  const tabs = [["all", "ทุกชั้น"], ...floors.map(f => [String(f), "ชั้น " + f])];
+  document.getElementById("tabs").innerHTML = tabs.map(([k, l]) => `<button class="tab ${floorTab === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("");
+  document.querySelectorAll(".tab").forEach(el => el.onclick = () => { floorTab = el.dataset.f; render(); });
+
+  const list = S.filter(([r, s]) => (floorTab === "all" || String(r.floor) === floorTab) && (!kpiFilter || s.state === kpiFilter));
+  const grid = document.getElementById("grid");
+  if (!list.length) { grid.innerHTML = `<div class="loading">ไม่มีห้องในตัวกรองนี้</div>`; return; }
+  grid.innerHTML = list.map(([r, s]) => {
+    const [l, c] = STATE[s.state];
+    return `<div class="room" data-r="${esc(r.room_no)}" style="border-left-color:${c}">
+      <div class="top"><span class="no">${esc(r.room_no)}</span><span class="tag" style="background:${c}">${l}</span></div>
+      <div class="rtype">${esc(r.room_type)}${r.has_bathtub === true ? " · มีอ่าง" : r.has_bathtub === false ? " · ไม่มีอ่าง" : ""}</div>
+      <div class="bar"><i style="width:${Math.round(100 * s.done / s.total)}%"></i></div>
+      <div class="st">ตรวจแล้ว ${s.done}/${s.total}</div>
+      ${s.issues.length ? `<div class="iss">❌ ${s.issues.map(i => esc(i.label)).join(", ")}</div>` : ""}
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".room").forEach(el => el.onclick = () => openEdit(el.dataset.r));
+}
+document.getElementById("issuesHead").onclick = () => { showIssues = !showIssues; render(); };
+
+function bedText(r) {
+  const p = [];
+  for (const [k, l] of [["35", "3.5"], ["5", "5"], ["6", "6"]]) if (r["mat_" + k]) p.push(`ที่นอน ${l}′ ×${r["mat_" + k]}`);
+  return p.join(" · ") || "ไม่มีที่นอน";
+}
+
+function openEdit(no) {
+  const r = rooms.find(x => x.room_no === no); if (!r) return;
+  const c = checks[no] || {};
+  editing = { room_no: no, items: {} };
+  for (const i of itemsFor(r)) editing.items[i.key] = c[i.key] ? { status: c[i.key].status, note: c[i.key].note || "" } : { status: null, note: "" };
+  let name = ""; try { name = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+  const html = GROUPS.map(([g]) => {
+    const list = itemsFor(r).filter(i => i.group === g);
+    return `<div class="grp">${g}</div>` + list.map(i => {
+      const prev = c[i.key];
+      return `<div class="item" id="it_${i.key}"><div class="row"><div class="name">${esc(i.label)}<div class="hint">${esc(i.key === "bed" ? i.hint + " (" + bedText(r) + ")" : i.hint)}</div></div>
+        <div class="seg">${[["ok", "✓ ดี"], ["issue", "✗ เสีย"], ["na", "ไม่มี"]].map(([s, l]) => `<button type="button" class="${s}" data-k="${i.key}" data-s="${s}">${l}</button>`).join("")}</div></div>
+        <input type="text" id="n_${i.key}" placeholder="เป็นอะไร? เช่น แอร์ไม่เย็น / ยาแนวดำ" style="display:none" />
+        ${prev ? `<div class="meta">ล่าสุด ${fmt(prev.checked_at)}${prev.checked_by ? " · " + esc(prev.checked_by) : ""}</div>` : ""}</div>`;
+    }).join("");
+  }).join("");
+  document.getElementById("modal").innerHTML = `
+    <h3>ห้อง ${esc(no)}</h3><div class="sub" style="margin:0">${esc(r.room_type)}${r.has_bathtub === true ? " · มีอ่าง" : ""}</div>
+    ${html}
+    <label class="f">ชื่อคนตรวจ</label><input type="text" id="who" value="${esc(name)}" placeholder="เช่น ปิ่น" />
+    <div class="actions"><button class="btn" id="cancel">ปิด</button><button class="btn primary" id="save">บันทึก</button></div>`;
+  for (const k of Object.keys(editing.items)) paint(k);
+  document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+    const it = editing.items[b.dataset.k];
+    it.status = it.status === b.dataset.s ? null : b.dataset.s; paint(b.dataset.k);
+    if (it.status === "issue") document.getElementById("n_" + b.dataset.k).focus();
+  });
+  document.querySelectorAll(".item input").forEach(inp => inp.oninput = () => { editing.items[inp.id.slice(2)].note = inp.value; });
+  document.getElementById("cancel").onclick = close;
+  document.getElementById("save").onclick = save;
+  document.getElementById("bd").classList.add("show");
+  document.getElementById("modal").scrollTop = 0;
+}
+function paint(k) {
+  const it = editing.items[k], box = document.getElementById("it_" + k);
+  box.className = "item " + (it.status || "");
+  box.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.s === it.status));
+  const inp = document.getElementById("n_" + k);
+  inp.style.display = it.status === "issue" ? "" : "none"; inp.value = it.note || "";
+}
+function close() { document.getElementById("bd").classList.remove("show"); editing = null; }
+document.getElementById("bd").onclick = e => { if (e.target.id === "bd") close(); };
+
+async function save() {
+  const items = Object.entries(editing.items).filter(([, v]) => v.status)
+    .map(([key, v]) => ({ key, status: v.status, note: v.status === "issue" ? v.note.trim() : (v.note.trim() || null) }));
+  const missing = items.filter(i => i.status === "issue" && !i.note);
+  if (missing.length) { alert("กรุณาเขียนว่าเป็นอะไร: " + missing.map(i => LABEL[i.key]).join(", ")); return; }
+  if (!items.length) { close(); return; }
+  const who = document.getElementById("who").value.trim();
+  if (!who) { alert("กรุณาใส่ชื่อคนตรวจ"); document.getElementById("who").focus(); return; }
+  try { localStorage.setItem(NAME_KEY, who); } catch (e) {}
+  const btn = document.getElementById("save"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
+  try {
+    const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ k: token(), room_no: editing.room_no, checked_by: who, items }) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || "บันทึกไม่สำเร็จ");
+    checks[editing.room_no] = Object.fromEntries(d.checks.map(x => [x.item_key, x]));
+    close(); render();
+  } catch (e) { btn.disabled = false; btn.textContent = "บันทึก"; alert("บันทึกไม่สำเร็จ: " + e.message); }
+}
+
+async function load() {
+  const k = token(), errBox = document.getElementById("err");
+  if (!k) { errBox.innerHTML = `<div class="err">ลิงก์ไม่ถูกต้อง — กรุณาเปิดจากลิงก์ที่ได้รับ (มี ?k=…)</div>`; document.getElementById("grid").innerHTML = ""; return; }
+  try {
+    const res = await fetch(`${API}?k=${encodeURIComponent(k)}`);
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error === "unauthorized" ? "ลิงก์หมดสิทธิ์หรือไม่ถูกต้อง" : d.error);
+    rooms = d.rooms; checks = {};
+    for (const x of d.checks) (checks[x.room_no] ||= {})[x.item_key] = x;
+    errBox.innerHTML = ""; render();
+  } catch (e) { errBox.innerHTML = `<div class="err">โหลดข้อมูลไม่ได้: ${esc(e.message)}</div>`; document.getElementById("grid").innerHTML = ""; }
+}
+load();
+</script>
+</body>
+</html>
